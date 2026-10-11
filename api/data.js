@@ -5,7 +5,7 @@ import {createLiveData,memoryCache,pack,unpack} from '../lib/live-data.mjs';
 import {collectFresh} from '../lib/data.mjs';
 import {readPublishedPrevious} from '../scripts/build-pages.mjs';
 
-const cache=process.env.VERCEL==='1'?getCache({namespace:'hibi-note-news-sports-v4'}):memoryCache();
+const cache=process.env.VERCEL==='1'?getCache({namespace:'hibi-note-news-sports-v5'}):memoryCache();
 let baseline;
 async function loadBaseline(){
  baseline??=JSON.parse(await readFile(resolve('dist/data/sports.json'),'utf8'));
