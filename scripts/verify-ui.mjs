@@ -27,13 +27,13 @@ assert.match($('leader-spotlight').textContent,/レイエス/);
 assert.match($('leaders').textContent,/セ/);assert.match($('leaders').textContent,/パ/);
 document.querySelector('#categories [data-category="era"]').click();
 assert.match($('leader-spotlight').textContent,/平良/);
-assert.match($('baseball-games').textContent,/巨人/);
+assert.ok($('baseball-games').querySelector('.game'),'Upcoming games render from current data');
 $('team').value='西武';$('team').dispatchEvent(new window.Event('change'));
 assert.match($('baseball-games').textContent,/西武/);assert.doesNotMatch($('baseball-games').textContent,/巨人/);
 assert.match($('football-game').textContent,/ブラジル/);
 assert.match($('fifa-summary').textContent,/pts/);assert.equal($('simulator').hidden,false);
 const before=$('simulation').textContent;$('importance').value='25';$('importance').dispatchEvent(new window.Event('change'));assert.notEqual($('simulation').textContent,before);
-const failures=[data.standings,data.baseballGames,data.footballGames,data.fifa,data.baseballNews,data.footballNews,data.baseballResults,data.footballHistory,...Object.values(data.leaders).flatMap(v=>[v.c,v.p])].filter(s=>!s.ok);
+const failures=[data.standings,data.baseballGames,data.footballGames,data.fifa,data.baseballResults,data.footballHistory,...Object.values(data.leaders).flatMap(v=>[v.c,v.p])].filter(s=>!s.ok);
 assert.equal(failures.length,0,'All official data sources must succeed');
 assert.match($('data-updated').textContent,/データ取得・集計完了/);assert.match(document.querySelector('[data-time="standings"]').textContent,/取得：/);
 assert.equal($('calendar').querySelectorAll('[data-day]').length,31);assert.match($('calendar').textContent,/⚾/);assert.match($('calendar').textContent,/⚽/);
@@ -43,14 +43,14 @@ $('favorite-team').value='西';$('favorite-team').dispatchEvent(new window.Event
 document.querySelector('[data-theme-choice="green"]').click();assert.equal(document.documentElement.dataset.theme,'green');assert.match(saved.get('sports-desk-preferences-v1'),/green/);
 $('leader-team').value='西';$('leader-team').dispatchEvent(new window.Event('change'));assert.match($('leader-spotlight').textContent,/平良/);assert.ok([...$('leaders').querySelectorAll('tbody tr')].every(r=>r.textContent.includes('西')));assert.match($('leader-note').textContent,/球団内/);
 $('leader-team').value='all';$('leader-team').dispatchEvent(new window.Event('change'));
-for(const sport of ['baseball','football']){assert.equal($(sport+'-news').querySelectorAll('a').length,3);assert.match($(sport+'-news').textContent,/2026/);}
+for(const sport of ['baseball','football'])assert.equal($(sport+'-news'),null);
 assert.equal($('baseball-results').querySelectorAll('.recent-result').length,5);
 assert.match($('opponent-profile').textContent,/ブラジル/);assert.match($('football-result').textContent,/2 − 1/);
 assert.equal($('play'),null);assert.equal($('tab-play'),null);
 $('settings-reset').click();assert.equal(document.documentElement.dataset.theme,'lavender');assert.equal($('team').value,'all');assert.equal(document.documentElement.dataset.fontSize,undefined);assert.equal($('font-size-options'),null);
 document.querySelector('#leader-tabs [data-league="all"]').click();
-data.fifa.ok=false;data.leaders.era.c.ok=false;data.baseballNews.ok=false;
-await vm.runInContext('refresh()',context);assert.equal($('simulator').hidden,true);assert.match($('status').textContent,/取得できません/);assert.match($('leaders').textContent,/取得できません/);assert.match($('baseball-news').textContent,/ニュースを取得できません/);
+data.fifa.ok=false;data.leaders.era.c.ok=false;
+await vm.runInContext('refresh()',context);assert.equal($('simulator').hidden,true);assert.match($('status').textContent,/取得できません/);assert.match($('leaders').textContent,/取得できません/);assert.equal($('baseball-news'),null);
 console.log('PASS: calendar month and day selection, favorite, themes and persistence, club rankings, news failures, official sources, both standings, combined ranking, ERA order, team filter, FIFA simulator, failure display.');
 
 $('tab-draft').click();assert.equal($('draft').hidden,false);assert.equal($('draft-categories').querySelectorAll('button').length,7);assert.equal($('draft-picks').querySelectorAll('.draft-round').length,10);
@@ -75,3 +75,10 @@ $('appearance-mode').value='dark';$('appearance-mode').dispatchEvent(new window.
 $('focus-toggle').click();assert.equal(document.documentElement.dataset.focus,'true');
 const portable=JSON.parse(vm.runInContext('JSON.stringify(collectBackup())',context));assert.equal(portable.experience.mode,'dark');assert.equal(portable.experience.lineup.players.length,11);
 console.log('PASS: real national-team profiles, eleven lineup positions, recent results, source health, unified search, dark/focus modes and portable experience settings.');
+
+for(const key of ['general','economy','baseball','domestic-soccer','overseas-soccer','entertainment']){
+ const source=key==='general'?data.daily.nationalNews:data.daily.newsCategories[key];assert.equal(source.ok,true,'News source: '+key);
+ $('news-category').value=key;$('news-category').dispatchEvent(new window.Event('change'));assert.equal($('national-news').querySelectorAll('.news-item').length,3);assert.match($('national-news').textContent,new RegExp(source.data[0].title.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+ for(const link of $('national-news').querySelectorAll('.news-item'))assert.ok(['news.yahoo.co.jp','web.gekisaka.jp'].includes(new URL(link.getAttribute('href')).hostname));
+}
+assert.equal($('baseball-news'),null);assert.equal($('football-news'),null);console.log('PASS: all six real news categories, safe article links and no duplicate sport-page news.');
