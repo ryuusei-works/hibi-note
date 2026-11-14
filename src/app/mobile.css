@@ -1,0 +1,313 @@
+/* Keep narrow-screen behavior together, after the desktop workspace styles. */
+@media (max-width: 760px) {
+  .app-shell,
+  .main-shell,
+  .main-content,
+  .main-content > section,
+  .home-section,
+  .home-primary,
+  .home-secondary {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .main-content {
+    padding-right: max(16px, env(safe-area-inset-right));
+    padding-left: max(16px, env(safe-area-inset-left));
+  }
+
+  .page-footer {
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
+    overflow-wrap: anywhere;
+  }
+
+  .topbar {
+    height: auto;
+    min-height: 64px;
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) 32px;
+    gap: 12px;
+    padding: 10px max(16px, env(safe-area-inset-right)) 10px
+      max(16px, env(safe-area-inset-left));
+  }
+
+  .topbar-actions {
+    min-width: 0;
+    gap: 8px;
+    width: auto;
+    justify-self: end;
+  }
+
+  .topbar .top-avatar {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    flex-shrink: 0;
+  }
+
+  .topbar .mobile-menu {
+    position: static;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    color: var(--ink);
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    transform: none;
+  }
+
+  .topbar .breadcrumb {
+    display: flex;
+    min-width: 0;
+    font-size: 12px;
+  }
+
+  .topbar .breadcrumb > span {
+    display: none;
+  }
+
+  .sidebar {
+    width: min(280px, calc(100vw - 56px));
+    overscroll-behavior-y: contain;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  body.workspace-menu-open {
+    overflow: hidden;
+  }
+
+  .site-tabs .nav-item {
+    min-height: 44px;
+  }
+
+  .section-title,
+  .section-header,
+  .card-heading,
+  .collection-toolbar,
+  .collection-actions,
+  .workspace-sync-actions,
+  .home-news-heading,
+  .home-news-heading > div,
+  .home-news-footer,
+  .home-news-controls {
+    flex-wrap: wrap;
+  }
+
+  .title-group,
+  .title-group > div,
+  .task-main,
+  .deadline-row > div,
+  .news-feed,
+  .workspace-item-heading > *,
+  .lineup-controls > * {
+    min-width: 0;
+  }
+
+  .section-title h2,
+  .section-header h2,
+  .card-heading h3,
+  .football-result-row,
+  .deadline-row,
+  .quick-links > a,
+  .workspace-item > small,
+  .card-foot,
+  .note {
+    overflow-wrap: anywhere;
+  }
+
+  .tabs {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .tabs button,
+  .category-row button,
+  .button,
+  .secondary-button,
+  .primary-button,
+  .calendar-controls button {
+    min-height: 44px;
+  }
+
+  #home .home-news-controls .icon-button {
+    width: 28px;
+    height: 28px;
+    min-height: 28px;
+  }
+
+  #home .home-news-controls .text-button {
+    min-height: 28px;
+  }
+
+  .table-scroll,
+  .draft-table-scroll {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .baseball-layout,
+  .football-layout,
+  .football-insights,
+  .leader-layout,
+  .draft-picks,
+  .draft-tools-grid,
+  .starter-pair,
+  .simulation {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-game {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .home-game-state {
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .filter-label,
+  .club-filter,
+  .sim-controls label,
+  .lineup-controls label {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .filter-label select,
+  .club-filter select,
+  .sim-controls select,
+  .lineup-controls select,
+  .feature-details > label select {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    margin-left: 0;
+  }
+
+  /* Native inputs stay legible and avoid focus zoom on iPhone browsers. */
+  :root
+    :is(input, select, textarea):not([type="checkbox"]):not([type="radio"]):not(
+      [type="color"]
+    ) {
+    min-width: 0;
+    max-width: 100%;
+    font-size: 16px;
+  }
+
+  .workspace-layout-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .workspace-layout-row > div,
+  .workspace-settings .settings-buttons,
+  .modal-actions,
+  .tools-actions,
+  .draft-lock-controls {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .workspace-layout-row .icon-button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .modal,
+  .modal.wide,
+  .tool-dialog {
+    box-sizing: border-box;
+    width: calc(100% - 24px);
+    max-width: 100%;
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    overflow-wrap: anywhere;
+  }
+
+  .modal-inner,
+  .tool-dialog {
+    padding: 18px;
+  }
+
+  .modal-header,
+  .dialog-heading {
+    align-items: flex-start;
+  }
+
+  .modal-header h2,
+  .dialog-heading h2 {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .modal-header .icon-button,
+  .dialog-heading button {
+    min-width: 44px;
+    min-height: 44px;
+    flex-shrink: 0;
+  }
+
+  .share-preview,
+  #lineup-image {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+@media (max-width: 380px) {
+  #home .stats-grid,
+  .draft-names,
+  .squad-list,
+  .player-stats,
+  .profile-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #home .stat-card > span {
+    min-height: 0;
+  }
+
+  .workspace-settings #workspace-menu-settings {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  #news .news-categories {
+    min-width: 0;
+    max-width: 100%;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-padding-inline: 18px;
+    scrollbar-width: thin;
+    padding: 14px 18px;
+    gap: 8px;
+  }
+
+  #news .news-categories > p {
+    display: none;
+  }
+
+  #news .news-categories button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    min-height: 34px;
+    padding: 7px 12px;
+  }
+}

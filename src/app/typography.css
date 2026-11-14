@@ -1,0 +1,63 @@
+/* Shared text roles keep individual panels from changing the visual scale. */
+:root {
+  --text-page: 24px;
+  --text-section: 15px;
+  --text-body: 13px;
+  --text-caption: 11px;
+  --text-number: 24px;
+}
+
+.main-content .page-heading h1 {
+  font-size: var(--text-page);
+  line-height: 1.5;
+}
+.main-content .page-heading p {
+  font-size: var(--text-body);
+  line-height: 1.8;
+}
+.main-content .page-heading .eyebrow {
+  font-size: var(--text-caption);
+}
+.main-content :is(.card-heading h3, .section-header h2, .section-title h2),
+.main-content .feature-details h3,
+#home .section-header h2,
+#news .news-feed-heading h4,
+#news .news-page-heading h3 {
+  font-size: var(--text-section);
+  line-height: 1.7;
+}
+.main-content .feature-details > summary {
+  font-size: var(--text-body);
+  line-height: 1.8;
+}
+#home .stat-card > span,
+#home .stat-card small,
+#home .home-game small,
+#home .home-game-date,
+#home .home-game-state,
+#news .news-categories button,
+#news .home-news-tabs button {
+  font-size: var(--text-caption);
+  line-height: 1.7;
+}
+#home .home-game b,
+#home .task-main > button,
+#home .deadline-row strong,
+#home .quick-links > a,
+#news .news-item .news-headline,
+.squad-player .player-link {
+  font-size: var(--text-body);
+  line-height: 1.8;
+}
+#home .stat-card strong,
+#home .home-section .timer-digits {
+  font-size: var(--text-number);
+}
+
+@media (max-width: 760px) {
+  :root {
+    --text-page: 22px;
+    --text-section: 14px;
+    --text-number: 22px;
+  }
+}

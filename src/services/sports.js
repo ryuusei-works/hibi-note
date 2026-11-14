@@ -1,0 +1,4535 @@
+import { formatDate, formatDateTime } from "../utils/dates.js";
+import { matchCountdown } from "../utils/matches.js";
+
+/** Sports rendering and interactions, owned by one Dashboard instance.
+ * @param {import('./lifecycle').DashboardLifecycle} scope
+ */
+export function mountSports(scope) {
+  let data,
+    standingsLeague = "c",
+    leaderLeague = "c",
+    category = "avg";
+  const $ = (id) => document.getElementById(id);
+  const panels = {
+    draft: {
+      title: "野球集計",
+      description: "7部門・5巡のドラフトで、2つの軍の成績を比較。",
+      label: "野球集計",
+    },
+    home: {
+      title: "今日を、ひと目で。",
+      description:
+        "全国・地域のニュースとスポーツ。気になる情報を、ひとつの場所に。",
+      label: "ホーム",
+    },
+    settings: {
+      title: "設定",
+      description: "目的のカテゴリを開いて、自分に合った使い方に。",
+      label: "設定",
+    },
+    guide: {
+      title: "Hibi Sportsの使い方。",
+      description: "知りたい情報へ、迷わず。はじめての方はこちらから。",
+      label: "使い方・更新について",
+    },
+    baseball: {
+      title: "プロ野球",
+      description: "次の一戦も、タイトルの行方も。プロ野球の今をひと目で。",
+      label: "プロ野球",
+    },
+    football: {
+      title: "サッカー日本代表",
+      description: "次の代表戦と世界の順位。SAMURAI BLUEを、もっと身近に。",
+      label: "サッカー日本代表",
+    },
+  };
+  Object.assign(panels, {
+    news: {
+      title: "ニュース",
+      description: "全国・地域のニュースとスポーツを、ひとつの場所に。",
+      label: "ニュース",
+    },
+    schedule: {
+      title: "スケジュール",
+      description: "次の一戦を、見逃さないために。",
+      label: "スケジュール",
+    },
+    links: {
+      title: "リンク",
+      description: "いつも使う情報源を、ひとつに。",
+      label: "リンク",
+    },
+  });
+  const panelFromLocation = () =>
+    (window.location.hash.startsWith("#settings-")
+      ? "settings"
+      : window.location.hash.slice(1)) ||
+    window.location.pathname.split("/").filter(Boolean)[0] ||
+    "home";
+  function showPanel(id) {
+    const target = Object.hasOwn(panels, id) ? id : "home";
+    for (const key of Object.keys(panels)) {
+      $(key).hidden = key !== target;
+      const button = $("tab-" + key);
+      if (!button) continue;
+      button.classList.toggle("active", key === target);
+      button.removeAttribute("aria-selected");
+      button.setAttribute("tabindex", "0");
+      if (key === target) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
+    }
+    $("page-title").textContent = panels[target].title;
+    $("page-description").textContent = panels[target].description;
+    $("breadcrumb-current").textContent = panels[target].label;
+    document.title = panels[target].label + " | Hibi Sports";
+    document.documentElement.dataset.page = target;
+    window.dispatchEvent(
+      new CustomEvent("workspace:panel", { detail: target }),
+    );
+  }
+  function navigatePanel(id) {
+    if (!Object.hasOwn(panels, id)) return;
+    showPanel(id);
+    const path = id === "home" ? "/" : "/" + id;
+    if (window.location.pathname !== path || window.location.hash)
+      window.history.pushState(null, "", path);
+    window.scrollTo?.({ top: 0, behavior: "instant" });
+  }
+  scope.listen(document.querySelector(".site-tabs"), "click", (event) => {
+    const button = event.target.closest("[data-tab]");
+    if (button) navigatePanel(button.dataset.tab);
+  });
+  scope.listen(document.querySelector(".site-tabs"), "keydown", (event) => {
+    const buttons = [
+      ...document.querySelectorAll(".site-tabs [data-tab]:not([hidden])"),
+    ];
+    const index = buttons.indexOf(event.target);
+    if (index < 0) return;
+    let next;
+    if (event.key === "ArrowDown" || event.key === "ArrowRight")
+      next = (index + 1) % buttons.length;
+    else if (event.key === "ArrowUp" || event.key === "ArrowLeft")
+      next = (index + buttons.length - 1) % buttons.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = buttons.length - 1;
+    else return;
+    event.preventDefault();
+    navigatePanel(buttons[next].dataset.tab);
+    buttons[next].focus();
+  });
+  scope.listen(window, "hashchange", () => {
+    const id = panelFromLocation();
+    if (id !== "main-content") showPanel(id);
+  });
+  scope.listen(window, "popstate", () => {
+    const id = panelFromLocation();
+    if (id !== "main-content") showPanel(id);
+  });
+  showPanel(panelFromLocation());
+  const menuKey = "sports-desk-menu-collapsed-v1";
+  let menuCollapsed = false;
+  function applyMenu() {
+    document.documentElement.dataset.menuCollapsed = "false";
+    $("site-menu").hidden = false;
+  }
+  applyMenu();
+  const esc = (v) =>
+    String(v ?? "").replace(
+      /[&<>"']/g,
+      (s) =>
+        ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;",
+        })[s],
+    );
+  const number = (v) =>
+    Number(v).toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  const countryNames = {
+    JPN: "日本",
+    ESP: "スペイン",
+    ARG: "アルゼンチン",
+    FRA: "フランス",
+    ENG: "イングランド",
+    BRA: "ブラジル",
+    POR: "ポルトガル",
+    NED: "オランダ",
+    BEL: "ベルギー",
+    GER: "ドイツ",
+    CRO: "クロアチア",
+    MAR: "モロッコ",
+    ITA: "イタリア",
+    COL: "コロンビア",
+    URU: "ウルグアイ",
+    SUI: "スイス",
+    USA: "アメリカ",
+    MEX: "メキシコ",
+    SEN: "セネガル",
+    IRN: "イラン",
+    KOR: "韓国",
+    PAR: "パラグアイ",
+    SCO: "スコットランド",
+  };
+  Object.assign(countryNames, {
+    IDN: "インドネシア",
+    THA: "タイ",
+    UZB: "ウズベキスタン",
+    AUS: "オーストラリア",
+    KSA: "サウジアラビア",
+    QAT: "カタール",
+    IRQ: "イラク",
+    JOR: "ヨルダン",
+    CHN: "中国",
+    VIE: "ベトナム",
+    UAE: "アラブ首長国連邦",
+    BHR: "バーレーン",
+    OMA: "オマーン",
+  });
+  Object.assign(countryNames, {
+    CZE: "チェコ",
+    NOR: "ノルウェー",
+    GRE: "ギリシャ",
+    SRB: "セルビア",
+    MLI: "マリ",
+    BEN: "ベナン",
+    CAN: "カナダ",
+    CHI: "チリ",
+    PER: "ペルー",
+    DEN: "デンマーク",
+    SWE: "スウェーデン",
+    HUN: "ハンガリー",
+    AUT: "オーストリア",
+    MKD: "北マケドニア",
+    TUR: "トルコ",
+    IND: "インド",
+    NGA: "ナイジェリア",
+  });
+  const name = (r) => countryNames[r.code] || r.name;
+  const teams = {
+    神: "阪神タイガース",
+    巨: "読売ジャイアンツ",
+    デ: "横浜DeNAベイスターズ",
+    広: "広島東洋カープ",
+    ヤ: "東京ヤクルトスワローズ",
+    中: "中日ドラゴンズ",
+    ソ: "福岡ソフトバンクホークス",
+    西: "埼玉西武ライオンズ",
+    日: "北海道日本ハムファイターズ",
+    オ: "オリックス・バファローズ",
+    ロ: "千葉ロッテマリーンズ",
+    楽: "東北楽天ゴールデンイーグルス",
+  };
+  const currentDay = () =>
+    new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Tokyo" }).format(
+      new Date(),
+    );
+  const date = formatDate;
+  const empty = (
+    message = "公式データを取得できませんでした。時間をおいて再確認してください。",
+  ) => `<div class="empty">${esc(message)}</div>`;
+  function setSource(id, url) {
+    $(id).href = url;
+  }
+  function paintStandings() {
+    const source = data.standings;
+    setSource("standings-source", source.source);
+    if (!source.ok) {
+      $("standings").innerHTML = empty();
+      return;
+    }
+    const rows = source.data[standingsLeague];
+    $("standings").innerHTML =
+      `<table><thead><tr><th>順位</th><th>チーム</th><th>試合</th><th>勝</th><th>敗</th><th>分</th><th><abbr title="勝利数 ÷（勝利数＋敗戦数）。引き分けは分母に含みません。">勝率</abbr></th><th><abbr title="首位とのゲーム差。一般に勝敗数の差から計算し、0.5ゲーム単位で表示します。">差</abbr></th><th>前回比</th></tr></thead><tbody>${rows.map((r, i) => `<tr><td>${i + 1}</td><td class="team-cell"><span class="team-line"></span>${esc(r.team)}</td><td>${esc(r.games)}</td><td>${esc(r.wins)}</td><td>${esc(r.losses)}</td><td>${esc(r.draws)}</td><td>${esc(r.pct)}</td><td>${esc(r.gap)}</td><td class="change-cell">${standingChange(r, i)}</td></tr>`).join("")}</tbody></table>`;
+    document
+      .querySelectorAll(".team-line")
+      .forEach((el, i) => el.setAttribute("data-color", i % 6));
+  }
+  function baseline() {
+    const prev = data.previous;
+    return prev &&
+      prev.year === data.year &&
+      Date.parse(prev.generatedAt) < Date.parse(data.generatedAt)
+      ? prev
+      : null;
+  }
+  function rankChange(oldRank, newRank) {
+    const delta = oldRank - newRank;
+    return delta > 0
+      ? `↑ ${delta}位上昇`
+      : delta < 0
+        ? `↓ ${-delta}位下降`
+        : "順位変動なし";
+  }
+  function valueChange(value, before, cat) {
+    const delta = Number(value) - Number(before);
+    if (Math.abs(delta) < 1e-9) return "成績変動なし";
+    const decimals = ["avg", "obp", "pct"].includes(cat.id)
+      ? 3
+      : cat.id === "era"
+        ? 2
+        : 0;
+    return `${delta > 0 ? "+" : ""}${delta.toFixed(decimals)}${cat.unit ? " " + cat.unit : ""}`;
+  }
+  function standingChange(row, index) {
+    const prev = baseline()?.standings;
+    if (!prev?.ok) return "比較なし";
+    const prior = prev.data[standingsLeague] || [];
+    const oldIndex = prior.findIndex((r) => r.team === row.team);
+    if (oldIndex < 0) return "比較なし";
+    const old = prior[oldIndex];
+    const parts = [rankChange(oldIndex + 1, index + 1)];
+    for (const [key, label] of [
+      ["wins", "勝"],
+      ["losses", "敗"],
+      ["draws", "分"],
+    ]) {
+      const delta = Number(row[key]) - Number(old[key]);
+      if (Number.isFinite(delta) && delta !== 0)
+        parts.push(`${label} ${delta > 0 ? "+" : ""}${delta}`);
+    }
+    return parts.map(esc).join("<br>");
+  }
+  function playerChange(row, cat, league, club) {
+    const prev = baseline();
+    if (!prev) return "比較なし";
+    const sources =
+      league === "all"
+        ? [prev.leaders?.[cat.id]?.c, prev.leaders?.[cat.id]?.p]
+        : [prev.leaders?.[cat.id]?.[league]];
+    if (sources.some((s) => !s?.ok)) return "比較なし";
+    const prior = ranked(
+      sources
+        .flatMap((s) => s.data)
+        .filter((p) => club === "all" || p.team === club),
+      cat.low,
+      Infinity,
+    );
+    const old = prior.find(
+      (p) =>
+        p.name === row.name && p.team === row.team && p.league === row.league,
+    );
+    if (!old) return "前回対象なし";
+    return [
+      rankChange(old.rank, row.rank),
+      valueChange(row.value, old.value, cat),
+    ]
+      .map(esc)
+      .join("<br>");
+  }
+  function paintComparisonTime() {
+    const prev = baseline();
+    $("comparison-time").textContent = prev
+      ? "前回比の基準：" +
+        formatDateTime(prev.generatedAt) +
+        " JST（前回の公開データ）。比較元がない項目は「比較なし」。"
+      : "前回比：比較できる前回の公開データがありません。次回更新から比較します。";
+  }
+  function paintGames() {
+    setSource("baseball-source", data.baseballGames.source);
+    if (!data.baseballGames.ok) {
+      $("baseball-games").innerHTML = empty();
+      return;
+    }
+    let games = data.baseballGames.data.filter(
+      (g) => g.date >= currentDay() && g.status === "scheduled",
+    );
+    const filter = $("team").value;
+    if (filter !== "all")
+      games = games.filter((g) => g.home === filter || g.away === filter);
+    games = games.slice(0, 36);
+    $("baseball-games").innerHTML = games.length
+      ? games
+          .map(
+            (g) =>
+              `<div class="game"><div class="game-meta"><span>${date(g.date)}</span><b>${esc(g.time) || "開始時間未定"}</b></div><div class="matchup"><span class="team-mark">${esc(g.home.slice(0, 1))}</span>${esc(g.home)}<span class="vs">VS</span>${esc(g.away)}<span class="team-mark">${esc(g.away.slice(0, 1))}</span></div><div class="game-venue">${esc(g.venue)}</div></div>`,
+          )
+          .join("")
+      : empty(
+          filter === "all"
+            ? "直近3か月に発表済みの試合はありません。公式日程をご確認ください。"
+            : "直近の発表済み日程に、このチームの試合はありません。",
+        );
+  }
+  function ranked(rows, low, limit = 10) {
+    let prev,
+      rank = 0;
+    return [...rows]
+      .sort((a, b) =>
+        low
+          ? Number(a.value) - Number(b.value)
+          : Number(b.value) - Number(a.value),
+      )
+      .map((r, i) => {
+        if (Number(r.value) !== prev) rank = i + 1;
+        prev = Number(r.value);
+        return { ...r, rank };
+      })
+      .filter((r) => r.rank <= limit);
+  }
+  function paintLeaders() {
+    const club = $("leader-team").value;
+    const effective =
+      club !== "all"
+        ? "神巨デ広ヤ中".includes(club)
+          ? "c"
+          : "p"
+        : leaderLeague;
+    const cat = data.categories.find((c) => c.id === category);
+    const sources =
+      effective === "all"
+        ? [data.leaders[category].c, data.leaders[category].p]
+        : [data.leaders[category][effective]];
+    $("leader-source").innerHTML = sources
+      .map(
+        (s, i) =>
+          `<a target="_blank" rel="noopener noreferrer" href="${esc(s.source)}">${effective === "all" ? (i ? "パ" : "セ") + "・リーグ出典" : "NPB公式出典"} ↗</a>`,
+      )
+      .join("　");
+    $("leader-time").textContent = sources.map((s) => stamp(s)).join(" / ");
+    $("leader-note").textContent =
+      [
+        club !== "all"
+          ? "球団内の独自順位（公式タイトルではありません）"
+          : leaderLeague === "all"
+            ? "セパ総合・独自集計"
+            : "リーグ順位",
+        cat.note || "NPB公式成績",
+        club === "all" && effective === "all"
+          ? "セパ総合は独自集計（公式タイトルではありません）"
+          : "同順位は同じ順位で表示",
+      ].join(" · ") +
+      " · 差は現在の成績差（同率首位まで）。打率などは必要な安打数ではありません。";
+    if (sources.some((s) => !s.ok)) {
+      $("leaders").innerHTML = empty();
+      $("leader-spotlight").innerHTML = empty("ランキングを確認できません");
+      return;
+    }
+    const allRows = sources.flatMap((s) => s.data);
+    const reference = ranked(allRows, cat.low)[0];
+    const rows = ranked(
+      allRows.filter((r) => club === "all" || r.team === club),
+      cat.low,
+    );
+    const top = rows[0];
+    if (!top) {
+      $("leaders").innerHTML = empty(
+        "この球団にランキング対象者はいません。規定条件はリーグ順位と同じです。",
+      );
+      $("leader-spotlight").innerHTML = empty("対象者なし");
+      return;
+    }
+    $("leader-spotlight").innerHTML =
+      `<div class="leader-kicker">${club === "all" ? "LEAGUE LEADER" : "TEAM LEADER"} / ${esc(cat.label)}</div><div class="crown">♛</div><h4>${playerLink(top.team, top.name, data.year)}</h4><div class="leader-team">${esc(teams[top.team] || top.team)}</div><div class="leader-value">${esc(top.value)}<span>${esc(cat.unit)}</span></div><div class="leader-label">${esc(cat.label)}ランキング 第1位</div>${rows.filter((r) => r.rank === 1).length > 1 ? '<p class="note">同率首位の選手がいます</p>' : ""}`;
+    $("leaders").innerHTML =
+      `<table class="leaders-table"><thead><tr><th>順位</th><th>選手</th><th>所属</th><th>リーグ</th><th>${esc(cat.label)}</th><th>${club === "all" ? "首位との差" : "リーグ首位との差"}</th><th>前回比</th></tr></thead><tbody>${rows.map((r) => `<tr class="${r.team === preferences.favorite ? "favorite-player" : ""}"><td>${r.rank}</td><td class="team-cell">${r.team === preferences.favorite ? '<span class="favorite-player-mark" aria-label="応援球団の選手">★</span> ' : ""}${playerLink(r.team, r.name, data.year)}</td><td>${esc(r.team)}</td><td><span class="league-pill">${r.league === "c" ? "セ" : "パ"}</span></td><td>${esc(r.value)} <small>${esc(cat.unit)}</small></td><td class="title-gap">${esc(titleGap(r, reference, cat))}</td><td class="change-cell">${playerChange(r, cat, effective, club)}</td></tr>`).join("")}</tbody></table>`;
+  }
+  function paintFootball() {
+    const s = data.footballGames;
+    setSource("football-source", s.source);
+    if (!s.ok) {
+      $("football-game").innerHTML = empty();
+      return;
+    }
+    const g = nextFootballGame();
+    if (!g) {
+      $("football-game").innerHTML = empty(
+        "取得済みのデータに次の代表戦はありません。公式日程をご確認ください。",
+      );
+      return;
+    }
+    $("football-game").innerHTML =
+      `<div class="football-match-content"><div class="competition">${esc(g.competition)}</div><div class="football-date">${date(g.date)}</div><div class="national-matchup"><div><div class="japan-flag"></div><strong>日本</strong></div><span>VS</span><div><div class="flag">⚽</div><strong>${esc(g.opponent)}</strong></div></div><div class="kickoff">キックオフ ${g.time ? esc(g.time) + "（日本時間）" : "時刻は公式詳細をご確認ください"}</div><div class="football-venue">${esc(g.venue)}</div></div>`;
+    setSource("football-source", g.timeSource || g.url);
+  }
+  function paintFifa() {
+    if (!data.fifa.ok) {
+      $("fifa-summary").innerHTML = empty();
+      $("roadmap").innerHTML = empty(
+        "順位とポイントを取得できないため、ポイント差を計算できません。",
+      );
+      $("simulator").hidden = true;
+      return;
+    }
+    const rows = data.fifa.data.rows;
+    const jp = rows.find((r) => r.code === "JPN");
+    const index = rows.indexOf(jp),
+      above = rows[index - 1];
+    $("fifa-summary").innerHTML =
+      `<div class="fifa-main"><div class="rank-big">${jp.rank}<span>位</span></div><div class="fifa-points"><small>JAPAN / TOTAL POINTS</small><b>${number(jp.points)} <span>pts</span></b><small>前回 ${jp.previousRank}位</small></div></div><div class="fifa-neighbors">${rows
+        .slice(Math.max(0, index - 1), index + 2)
+        .map(
+          (r) =>
+            `<div class="neighbor ${r.code === "JPN" ? "active" : ""}"><span>${r.rank}</span><span>${esc(name(r))}</span><b>${number(r.points)} <small>pts</small></b></div>`,
+        )
+        .join("")}</div>`;
+    $("fifa-date").textContent = "公式発表 " + formatDate(data.fifa.data.date);
+    paintNextMatchSimulation();
+  }
+  function nextFootballGame() {
+    return data.footballGames.ok
+      ? [...data.footballGames.data]
+          .filter((g) => g.date >= currentDay() && g.status === "scheduled")
+          .sort((a, b) =>
+            (a.date + (a.time || "99:99")).localeCompare(
+              b.date + (b.time || "99:99"),
+            ),
+          )[0]
+      : null;
+  }
+  function matchImportance(game) {
+    const title = game.competition || "";
+    if (/予選|qualif/i.test(title)) return "25";
+    if (/アジアカップ|ASIAN CUP/i.test(title)) {
+      if (
+        /準々決勝|準決勝|決勝(?!トーナメント)|quarter|semi|final$/i.test(title)
+      )
+        return "40";
+      if (/グループ|ラウンド16|group|round of 16/i.test(title)) return "35";
+      return "";
+    }
+    if (/ワールドカップ|WORLD CUP/i.test(title)) {
+      if (
+        /準々決勝|準決勝|決勝(?!トーナメント)|quarter|semi|final$/i.test(title)
+      )
+        return "60";
+      if (/グループ|ラウンド|group|round of/i.test(title)) return "50";
+      return "";
+    }
+    if (/親善|friendly|CHALLENGE|キリンチャレンジ/i.test(title)) {
+      // FIFA men's calendar 2026: March 23–31, June 1–9,
+      // September 21–October 6, November 9–17. Other years need confirmation.
+      const windows = [
+        ["2026-03-23", "2026-03-31"],
+        ["2026-06-01", "2026-06-09"],
+        ["2026-09-21", "2026-10-06"],
+        ["2026-11-09", "2026-11-17"],
+      ];
+      if (game.date.startsWith("2026-"))
+        return windows.some(([a, b]) => game.date >= a && game.date <= b)
+          ? "10"
+          : "5";
+    }
+    return "";
+  }
+  function matchedOpponent(game, rows) {
+    const opponent = game.opponent.replace(/代表$/, "").trim();
+    return rows.find(
+      (r) => r.code !== "JPN" && (name(r) === opponent || r.name === opponent),
+    );
+  }
+  let simulationGameKey = "";
+  function paintNextMatchSimulation() {
+    const game = nextFootballGame();
+    $("simulator").hidden = true;
+    if (!game) {
+      $("roadmap").innerHTML = empty(
+        "次の代表戦が未発表、または日程を取得できないため試算できません。",
+      );
+      return;
+    }
+    const opponent = matchedOpponent(game, data.fifa.data.rows);
+    $("roadmap").innerHTML =
+      `<div class="next-simulation-match"><span class="eyebrow">NEXT MATCH / ${date(game.date)}</span><h4>日本 × ${esc(game.opponent)}</h4><p>${esc(game.competition)}</p><p>この試合の勝敗で、日本のポイントと順位がどう変わるかを試算します。</p></div>`;
+    if (!opponent) {
+      $("roadmap").innerHTML += empty(
+        "対戦相手のFIFAポイントを照合できないため試算できません。相手未定・非加盟チームの場合も計算できません。",
+      );
+      return;
+    }
+    $("simulator").hidden = false;
+    $("opponent").textContent =
+      `${name(opponent)} · ${opponent.rank}位 (${number(opponent.points)} pts)`;
+    const key = game.date + "|" + game.opponent + "|" + game.competition;
+    if (key !== simulationGameKey) {
+      $("importance").value = matchImportance(game);
+      simulationGameKey = key;
+    }
+    $("simulation-assumption").textContent = matchImportance(game)
+      ? "公式日程の大会名と国際試合カレンダーから試合種別を設定しています。必要に応じて変更できます。"
+      : "試合種別・大会ステージを確定できません。公式日程を確認して試合の種類を選んでください。";
+    paintSimulation();
+  }
+  function paintSimulation() {
+    if (!data?.fifa.ok) return;
+    const game = nextFootballGame();
+    if (!game) return;
+    const rows = data.fifa.data.rows;
+    const jp = rows.find((r) => r.code === "JPN"),
+      opponent = matchedOpponent(game, rows);
+    const importance = Number($("importance").value);
+    if (!opponent || !importance) {
+      $("simulation").innerHTML = empty(
+        "試合の種類を選ぶと、勝ち・引き分け・負けの場合を表示します。",
+      );
+      return;
+    }
+    const above = rows
+      .filter((r) => r.points > jp.points)
+      .sort((a, b) => a.points - b.points)[0];
+    const expected = 1 / (1 + 10 ** ((opponent.points - jp.points) / 600));
+    $("simulation").innerHTML = [
+      ["勝った場合", 1],
+      ["引き分け", 0.5],
+      ["負けた場合", 0],
+    ]
+      .map(([label, result]) => {
+        const gain = importance * (result - expected),
+          points = jp.points + gain;
+        const projected =
+          1 +
+          rows.filter(
+            (r) =>
+              r.code !== "JPN" &&
+              (r.code === opponent.code ? opponent.points - gain : r.points) >
+                points,
+          ).length;
+        const target =
+          above?.code === opponent.code ? above.points - gain : above?.points;
+        return `<div class="sim-result"><span>${label}</span><b>${gain >= 0 ? "+" : ""}${number(gain)} pts</b><strong class="projected-rank">概算 ${projected}位</strong><small>試合後 ${number(points)} pts${above ? `<br>${points > target ? name(above) + "の想定ポイントを超過" : points === target ? name(above) + "と同ポイント" : name(above) + "まで " + number(target - points) + " pts差"}` : ""}</small></div>`;
+      })
+      .join("");
+  }
+  function tabs(id, set) {
+    scope.listen($(id), "click", (e) => {
+      const b = e.target.closest("button[data-league]");
+      if (!b || !data) return;
+      $(id)
+        .querySelectorAll("button")
+        .forEach((el) => {
+          el.classList.toggle("selected", el === b);
+          el.setAttribute("aria-pressed", String(el === b));
+        });
+      set(b.dataset.league);
+    });
+  }
+  tabs("standings-tabs", (league) => {
+    standingsLeague = league;
+    paintStandings();
+  });
+  tabs("leader-tabs", (league) => {
+    leaderLeague = league;
+    $("leader-team").value = "all";
+    paintLeaders();
+  });
+  scope.listen($("team"), "change", () => {
+    if (data) paintGames();
+  });
+  scope.listen($("importance"), "change", paintSimulation);
+  const scheduleTeams = {
+    神: "阪神",
+    巨: "巨人",
+    デ: "DeNA",
+    広: "広島",
+    ヤ: "ヤクルト",
+    中: "中日",
+    ソ: "ソフトバンク",
+    西: "西武",
+    日: "日本ハム",
+    オ: "オリックス",
+    ロ: "ロッテ",
+    楽: "楽天",
+  };
+  const themeAccents = {
+    lavender: "#625a87",
+    rose: "#885b68",
+    peach: "#8b614b",
+    sand: "#7d6749",
+    olive: "#6b714a",
+    sage: "#58745e",
+    mint: "#477566",
+    teal: "#47727a",
+    sky: "#52738b",
+    blue: "#53688b",
+    slate: "#5f6b78",
+    mauve: "#7d5f7f",
+    green: "#58745e",
+    coral: "#885b68",
+    amber: "#7d6749",
+  };
+  const themes = {
+    lavender: "ラベンダー",
+    rose: "ローズ",
+    peach: "ピーチ",
+    sand: "サンド",
+    olive: "オリーブ",
+    sage: "セージ",
+    mint: "ミント",
+    teal: "ティール",
+    sky: "スカイ",
+    blue: "ブルー",
+    slate: "スレート",
+    mauve: "モーヴ",
+    green: "グリーン",
+    coral: "コーラル",
+    amber: "アンバー",
+  };
+  function mixColor(a, b, weight) {
+    const rgb = (hex) => hex.match(/[a-f0-9]{2}/gi).map((n) => parseInt(n, 16));
+    return (
+      "#" +
+      rgb(a)
+        .map((n, i) =>
+          Math.round(n * weight + rgb(b)[i] * (1 - weight))
+            .toString(16)
+            .padStart(2, "0"),
+        )
+        .join("")
+    );
+  }
+  function deskColors(key) {
+    const accent = mixColor(
+        themeAccents[key] || themeAccents.lavender,
+        "#292e34",
+        0.8,
+      ),
+      soft = mixColor(accent, "#f7f7f3", 0.12),
+      surface = mixColor(accent, "#fffefa", 0.025),
+      ink = mixColor(accent, "#292e34", 0.16),
+      muted = mixColor(accent, "#46505a", 0.2),
+      line = mixColor(accent, "#f0f0ec", 0.22);
+    return {
+      "--bg": mixColor(accent, "#f6f6f2", 0.08),
+      "--surface": surface,
+      "--ink": ink,
+      "--muted": muted,
+      "--border": line,
+      "--line": line,
+      "--accent": accent,
+      "--accent-light": soft,
+      "--soft": soft,
+      "--accent-hover": mixColor(accent, "#252a30", 0.8),
+      "--desk-surface": surface,
+      "--desk-soft": soft,
+      "--desk-text": ink,
+      "--desk-muted": muted,
+      "--desk-line": line,
+    };
+  }
+  const regionNames = Object.fromEntries(
+    "北海道 青森県 岩手県 宮城県 秋田県 山形県 福島県 茨城県 栃木県 群馬県 埼玉県 千葉県 東京都 神奈川県 新潟県 富山県 石川県 福井県 山梨県 長野県 岐阜県 静岡県 愛知県 三重県 滋賀県 京都府 大阪府 兵庫県 奈良県 和歌山県 鳥取県 島根県 岡山県 広島県 山口県 徳島県 香川県 愛媛県 高知県 福岡県 佐賀県 長崎県 熊本県 大分県 宮崎県 鹿児島県 沖縄県"
+      .split(" ")
+      .map((label, i) => [String(i + 1).padStart(2, "0"), label]),
+  );
+  const homeLabels = { news: "ニュース", sports: "試合予定・カレンダー" };
+  const defaultHomeLayout = () =>
+    Object.keys(homeLabels).map((id) => ({ id, visible: true }));
+  // Accept the previous three-widget JSON format; remove only the retired weather widget.
+  function validHomeLayout(value) {
+    return (
+      Array.isArray(value) &&
+      [2, 3].includes(value.length) &&
+      new Set(value.map((v) => v?.id)).size === value.length &&
+      ["news", "sports"].every((id) => value.some((v) => v?.id === id)) &&
+      value.every(
+        (v) =>
+          v &&
+          ["weather", "news", "sports"].includes(v.id) &&
+          typeof v.visible === "boolean" &&
+          Object.keys(v).every((k) => ["id", "visible"].includes(k)),
+      )
+    );
+  }
+  function normalizeHomeLayout(value) {
+    return value
+      .filter((row) => Object.hasOwn(homeLabels, row.id))
+      .map((row) => ({ ...row, visible: true }));
+  }
+  function applyHomeLayout() {
+    const layout = normalizeHomeLayout(
+      preferences.homeLayout || defaultHomeLayout(),
+    );
+    preferences.homeLayout = layout;
+    // Widget placement is owned by the workspace layout; retain legacy backup preferences only.
+    $("home-layout-options").innerHTML = layout
+      .map(
+        (row, i) =>
+          `<div class="home-layout-row"><span>${homeLabels[row.id]}</span><div><button class="secondary-button" data-home-move="${row.id}" data-direction="-1" aria-label="${homeLabels[row.id]}を上へ" ${i === 0 ? "disabled" : ""}>↑</button><button class="secondary-button" data-home-move="${row.id}" data-direction="1" aria-label="${homeLabels[row.id]}を下へ" ${i === layout.length - 1 ? "disabled" : ""}>↓</button></div></div>`,
+      )
+      .join("");
+  }
+  scope.listen($("home-layout-options"), "click", (event) => {
+    const button = event.target.closest("[data-home-move]");
+    if (!button || button.disabled) return;
+    const layout = preferences.homeLayout || defaultHomeLayout(),
+      i = layout.findIndex((row) => row.id === button.dataset.homeMove),
+      j = i + Number(button.dataset.direction);
+    if (i < 0 || j < 0 || j >= layout.length) return;
+    [layout[i], layout[j]] = [layout[j], layout[i]];
+    preferences.homeLayout = layout;
+    applyHomeLayout();
+    savePreferences();
+    $("home-layout-options")
+      .querySelector(
+        `[data-home-move="${button.dataset.homeMove}"][data-direction="${button.dataset.direction}"]`,
+      )
+      ?.focus();
+  });
+  // Retain legacy backup parsing while retiring saved-news controls and storage writes.
+  const savedNews = [];
+  function validNewsUrl(value) {
+    try {
+      const u = new URL(value);
+      return (
+        u.protocol === "https:" &&
+        [
+          "news.yahoo.co.jp",
+          "web.gekisaka.jp",
+          "npb.jp",
+          "www.jfa.jp",
+        ].includes(u.hostname) &&
+        !u.username &&
+        !u.password
+      );
+    } catch {
+      return false;
+    }
+  }
+  function validateSavedNews() {
+    return [];
+  }
+  function newsRow(n, publisher) {
+    const published = n.publishedAt || n.date;
+    return `<div class="news-row"><a class="news-item" href="${esc(n.url)}" target="_blank" rel="noopener noreferrer"><span class="news-headline">${esc(n.title)}</span><div class="news-article-meta"><small>${esc(publisher)}</small><time datetime="${esc(published || "")}">${esc(formatDateTime(published) || "配信日時未取得")}</time></div><b class="news-open-icon" aria-hidden="true">↗</b></a></div>`;
+  }
+  const settingsKey = "sports-desk-preferences-v1";
+  let preferences = {
+    theme: "lavender",
+    favorite: "all",
+    region: "13",
+    homeLayout: defaultHomeLayout(),
+  };
+  try {
+    const saved = JSON.parse(
+      window.localStorage.getItem(settingsKey) || "null",
+    );
+    if (saved) {
+      if (validHomeLayout(saved.homeLayout))
+        preferences.homeLayout = normalizeHomeLayout(saved.homeLayout);
+      if (Object.hasOwn(regionNames, saved.region))
+        preferences.region = saved.region;
+      if (Object.hasOwn(themes, saved.theme)) preferences.theme = saved.theme;
+      if (saved.favorite === "all" || Object.hasOwn(teams, saved.favorite))
+        preferences.favorite = saved.favorite;
+    }
+  } catch {}
+  function savePreferences() {
+    try {
+      window.localStorage.setItem(settingsKey, JSON.stringify(preferences));
+      $("settings-status").textContent =
+        "保存しました。このブラウザーで次回も反映します。";
+    } catch {
+      $("settings-status").textContent =
+        "ブラウザーに保存できませんでした。この画面を開いている間だけ反映します。";
+    }
+  }
+  function applyTheme() {
+    document.documentElement.dataset.theme = preferences.theme;
+    document.documentElement.dataset.deskTheme = preferences.theme;
+    for (const [name, value] of Object.entries(deskColors(preferences.theme))) {
+      if (document.documentElement.dataset.dark === "true")
+        document.documentElement.style.removeProperty(name);
+      else document.documentElement.style.setProperty(name, value);
+    }
+    document.querySelectorAll("[data-theme-choice]").forEach((b) => {
+      b.classList.toggle(
+        "selected",
+        b.dataset.themeChoice === preferences.theme,
+      );
+      b.setAttribute(
+        "aria-pressed",
+        String(b.dataset.themeChoice === preferences.theme),
+      );
+      const check = b.querySelector(".desk-theme-check");
+      if (check)
+        check.textContent =
+          b.dataset.themeChoice === preferences.theme ? "✓" : "";
+    });
+  }
+  $("theme-options").innerHTML = Object.entries(themes)
+    .filter(([key]) => !["green", "coral", "amber"].includes(key))
+    .map(
+      ([key, label]) =>
+        `<button data-theme-choice="${key}" class="desk-theme-option" data-preview="${key}"><span class="desk-theme-swatch" aria-hidden="true" style="--swatch-color:${deskColors(key)["--accent"]};--swatch-background:${deskColors(key)["--accent-light"]}"></span><span>${label}</span><span class="desk-theme-check" aria-hidden="true"></span></button>`,
+    )
+    .join("");
+  const clubOptions =
+    '<option value="all">すべての球団</option>' +
+    Object.entries(teams)
+      .map(([key, label]) => `<option value="${key}">${label}</option>`)
+      .join("");
+  $("favorite-team").innerHTML = clubOptions.replace("すべての球団", "未設定");
+  $("favorite-team").value = preferences.favorite;
+  $("leader-team").innerHTML = clubOptions;
+  applyTheme();
+  syncRegion();
+  applyHomeLayout();
+  scope.listen($("theme-options"), "click", (e) => {
+    const b = e.target.closest("[data-theme-choice]");
+    if (!b) return;
+    preferences.theme = b.dataset.themeChoice;
+    applyTheme();
+    savePreferences();
+  });
+  function applyFavorite() {
+    const code = preferences.favorite;
+    const value = scheduleTeams[code] || "all";
+    if ([...$("team").options].some((o) => o.value === value))
+      $("team").value = value;
+    else $("team").value = "all";
+    if (data) {
+      paintGames();
+      paintCalendar();
+      paintHome();
+      paintLeaders();
+      paintStandings();
+      paintRecentResults();
+      if (typeof experience !== "undefined") paintBaseballExtras();
+    }
+  }
+  scope.listen($("favorite-team"), "change", () => {
+    preferences.favorite = $("favorite-team").value;
+    savePreferences();
+    applyFavorite();
+  });
+  scope.listen($("settings-reset"), "click", () => {
+    preferences = {
+      theme: "lavender",
+      favorite: "all",
+      region: "13",
+      homeLayout: defaultHomeLayout(),
+    };
+    $("favorite-team").value = "all";
+    applyTheme();
+    syncRegion();
+    applyFavorite();
+    paintDaily();
+    applyHomeLayout();
+    savePreferences();
+  });
+  scope.listen($("leader-team"), "change", () => {
+    const club = $("leader-team").value;
+    if (club !== "all") {
+      leaderLeague = "神巨デ広ヤ中".includes(club) ? "c" : "p";
+      $("leader-tabs")
+        .querySelectorAll("button")
+        .forEach((b) => {
+          const chosen = b.dataset.league === leaderLeague;
+          b.classList.toggle("selected", chosen);
+          b.setAttribute("aria-pressed", String(chosen));
+        });
+    }
+    if (data) paintLeaders();
+  });
+  const stamp = (s) =>
+    s?.ok && s.fetchedAt
+      ? "取得：" +
+        formatDateTime(s.fetchedAt) +
+        " JST" +
+        (s.stale ? "（更新失敗・前回取得分）" : "")
+      : "取得できませんでした";
+  function paintTimes() {
+    document.querySelectorAll("[data-time]").forEach((el) => {
+      el.textContent = stamp(data[el.dataset.time]);
+    });
+  }
+  function syncRegion() {
+    for (const id of ["home-region", "settings-region"]) {
+      if (!$(id).querySelector("option"))
+        $(id).innerHTML = Object.entries(regionNames)
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([key, label]) => `<option value="${key}">${label}</option>`)
+          .join("");
+      $(id).value = preferences.region;
+    }
+  }
+  for (const id of ["home-region", "settings-region"])
+    scope.listen($(id), "change", () => {
+      const region = $(id).value;
+      if (!Object.hasOwn(regionNames, region)) return;
+      preferences.region = region;
+      syncRegion();
+      savePreferences();
+      paintDaily();
+      void refreshNews();
+    });
+  const newsCategoryLabels = {
+    general: "総合",
+    domestic: "国内",
+    world: "国際",
+    economy: "経済",
+    technology: "IT・テクノロジー",
+    science: "科学",
+    life: "暮らし",
+    baseball: "野球",
+    "domestic-soccer": "国内サッカー",
+    "overseas-soccer": "海外サッカー",
+    entertainment: "エンタメ",
+  };
+  let newsCategory = "general",
+    homeNewsView = "national";
+  function categoryNews(key) {
+    return key === "general"
+      ? data?.daily?.nationalNews
+      : data?.daily?.newsCategories?.[key];
+  }
+  function newsSources() {
+    return [
+      ...Object.entries(newsCategoryLabels).map(([key, label]) => [
+        key,
+        label,
+        categoryNews(key),
+      ]),
+      ["local", "地域", data?.daily?.locations?.[preferences.region]?.news],
+    ];
+  }
+  scope.listen($("news-categories"), "click", (event) => {
+    const button = event.target.closest("[data-news-category]");
+    if (
+      !button ||
+      !Object.hasOwn(newsCategoryLabels, button.dataset.newsCategory)
+    )
+      return;
+    newsCategory = button.dataset.newsCategory;
+    document.querySelectorAll("[data-news-category]").forEach((item) => {
+      const selected = item.dataset.newsCategory === newsCategory;
+      item.classList.toggle("selected", selected);
+      item.setAttribute("aria-pressed", String(selected));
+    });
+    paintDaily();
+    paintChanges();
+  });
+  function showHomeNews(view) {
+    homeNewsView = view === "local" ? "local" : "national";
+    for (const id of ["national", "local"]) {
+      $(id + "-news-section").hidden = id !== homeNewsView;
+    }
+    document.querySelectorAll("[data-news-view]").forEach((button) => {
+      const chosen = button.dataset.newsView === homeNewsView;
+      button.classList.toggle("selected", chosen);
+      button.setAttribute("aria-pressed", String(chosen));
+    });
+  }
+  scope.listen($("home-news-tabs"), "click", (event) => {
+    const button = event.target.closest("[data-news-view]");
+    if (button) showHomeNews(button.dataset.newsView);
+  });
+  function headlineList(source, publisher) {
+    return source?.ok
+      ? (Array.isArray(source.data) ? source.data : source.data.items || [])
+          .slice(0, 3)
+          .map((n) => newsRow(n, publisher))
+          .join("") || empty("このカテゴリの記事はまだ掲載されていません。")
+      : empty(
+          "ニュースを取得できませんでした。出典のページからご確認ください。",
+        );
+  }
+  function paintDaily() {
+    if (!data) return;
+    const region = preferences.region,
+      location = data.daily?.locations?.[region],
+      national = categoryNews(newsCategory),
+      local = location?.news;
+    const publisher =
+      national?.publisher ||
+      (newsCategory.includes("soccer") ? "ゲキサカ" : "Yahoo!ニュース");
+    $("national-news").innerHTML = headlineList(national, publisher);
+    $("news-category-heading").textContent =
+      newsCategoryLabels[newsCategory] + "ニュース";
+    $("national-news-time").textContent =
+      "出典：" +
+      (national?.publisher ||
+        (newsCategory.includes("soccer") ? "ゲキサカ" : "Yahoo!ニュース")) +
+      " ／ " +
+      stamp(national);
+    if (national?.source && validNewsUrl(national.source))
+      $("national-news-time").innerHTML +=
+        ` <a href="${esc(national.source)}" target="_blank" rel="noopener noreferrer">配信元 ↗</a>`;
+    $("local-news-heading").textContent =
+      regionNames[region] + "の地域ニュース";
+    document.querySelector('[data-news-view="local"]').textContent =
+      regionNames[region] + "の地域ニュース";
+    $("local-news").innerHTML = headlineList(
+      local,
+      local?.data?.publisher || "Yahoo!ニュース",
+    );
+    $("local-news-source").href = local?.source || "https://news.yahoo.co.jp/";
+    $("local-news-time").textContent =
+      `Yahoo!ニュース${local?.ok ? " ／ 配信元：" + (local.data.publisher || local.data.coverage) : ""} ／ ${stamp(local)}`;
+    paintStatus();
+  }
+  let rivalsScope = "near";
+  scope.listen($("rivals-view"), "click", (event) => {
+    const button = event.target.closest("[data-rivals-scope]");
+    if (!button) return;
+    rivalsScope = button.dataset.rivalsScope === "all" ? "all" : "near";
+    document.querySelectorAll("[data-rivals-scope]").forEach((el) => {
+      const chosen = el.dataset.rivalsScope === rivalsScope;
+      el.classList.toggle("selected", chosen);
+      el.setAttribute("aria-pressed", String(chosen));
+    });
+    if (data) paintRivals();
+  });
+  function paintRivals() {
+    const target = $("football-rivals"),
+      source = data.footballRivals;
+    if (!data.fifa.ok) {
+      target.innerHTML = empty(
+        "FIFAランキングを取得できないため、日本より上位の国を特定できません。",
+      );
+      $("rivals-count").textContent = "";
+      return;
+    }
+    const rows = data.fifa.data.rows,
+      jp = rows.find((r) => r.code === "JPN"),
+      allAbove = rows
+        .filter((r) => r.rank < jp.rank)
+        .sort((a, b) => a.rank - b.rank),
+      above = rivalsScope === "all" ? allAbove : allAbove.slice(-3);
+    $("rivals-count").textContent =
+      above.length === allAbove.length
+        ? above.length + "か国"
+        : above.length + " / " + allAbove.length + "か国";
+    if (!above.length) {
+      target.innerHTML = empty("日本は1位です。日本より上位の国はありません。");
+      return;
+    }
+    if (!source?.ok) {
+      target.innerHTML = empty(
+        "上位国の日程・結果を取得できませんでした。時間をおいて再確認してください。",
+      );
+      return;
+    }
+    const open = new Set(
+      [...target.querySelectorAll("details[open]")].map(
+        (el) => el.dataset.rival,
+      ),
+    );
+    const first = !target.querySelector("details");
+    const match = (game, country) => {
+      const opponent = game.home.code === country.code ? game.away : game.home,
+        rank = rows.find((r) => r.code === opponent.code),
+        ours =
+          game.home.code === country.code ? game.homeScore : game.awayScore,
+        theirs =
+          game.home.code === country.code ? game.awayScore : game.homeScore,
+        scored = validScore(ours, theirs),
+        hasPk = validScore(game.homePenalty, game.awayPenalty),
+        penaltyOurs =
+          game.home.code === country.code ? game.homePenalty : game.awayPenalty,
+        penaltyTheirs =
+          game.home.code === country.code ? game.awayPenalty : game.homePenalty;
+      const state =
+        game.status === "finished"
+          ? scored
+            ? `${ours} − ${theirs} · ${hasPk ? "PK " + penaltyOurs + " − " + penaltyTheirs : ours > theirs ? "勝ち" : ours < theirs ? "負け" : "引分"}`
+            : "終了 · スコア未取得"
+          : game.status === "inprogress"
+            ? "試合中（取得時点）"
+            : game.status === "cancelled"
+              ? "中止・延期"
+              : "予定";
+      const time = game.timeKnown
+        ? new Date(game.kickoff).toLocaleTimeString("ja-JP", {
+            timeZone: "Asia/Tokyo",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        : "時刻未定";
+      return `<a class="rival-match" href="${esc(game.url)}" target="_blank" rel="noopener noreferrer"><time>${date(game.date)}<small>${time}</small></time><div><b>対 ${esc(rank ? name(rank) : opponent.name)}</b><small>${rank ? `最新 ${rank.rank}位` : "FIFA順位 未掲載"} · ${esc(game.competition)}</small></div><span class="rival-result">${esc(state)} ↗</span></a>`;
+    };
+    target.innerHTML = above
+      .map((country, i) => {
+        const games = source.data.countries.find(
+            (c) => c.code === country.code,
+          )?.games,
+          next = games?.ok
+            ? games.data
+                .filter(
+                  (g) => g.date >= currentDay() && g.status !== "finished",
+                )
+                .slice(0, 3)
+            : [],
+          past = games?.ok
+            ? [...games.data]
+                .filter(
+                  (g) => g.date <= currentDay() && g.status === "finished",
+                )
+                .sort((a, b) => b.kickoff.localeCompare(a.kickoff))
+                .slice(0, 3)
+            : [];
+        return `<details class="rival-country" data-rival="${esc(country.code)}" ${open.has(country.code) || (first && i === above.length - 1) ? "open" : ""}><summary><span class="rival-rank">${country.rank}<small>位</small></span><strong>${esc(name(country))}</strong><span>${number(country.points)} pts<small>日本と ${number(country.points - jp.points)} pts差</small></span></summary>${games?.ok ? `<div class="rival-games"><h4>これからの試合</h4>${next.length ? next.map((g) => match(g, country)).join("") : empty("取得済みの予定はありません。未発表・未収録の場合もあります。")}<h4>直近の結果</h4>${past.length ? past.map((g) => match(g, country)).join("") : empty("取得済みの結果はありません。")}</div>` : empty("この国の日程・結果を取得できませんでした。")}<div class="card-foot"><a href="${esc(games?.source || source.source)}" target="_blank" rel="noopener noreferrer">ESPNの国別日程 ↗</a><span>${esc(stamp(games))}</span></div></details>`;
+      })
+      .join("");
+  }
+  let calendarMonth = currentDay().slice(0, 7),
+    selectedDay = currentDay(),
+    calendarFilter = "all";
+  function calendarEvents() {
+    return [
+      ...(data.baseballGames.ok
+        ? data.baseballGames.data.map((g) => ({ ...g, sport: "baseball" }))
+        : []),
+      ...(data.footballGames.ok
+        ? data.footballGames.data.map((g) => ({ ...g, sport: "football" }))
+        : []),
+    ];
+  }
+  function isFavorite(g) {
+    return (
+      preferences.favorite !== "all" &&
+      (g.home === scheduleTeams[preferences.favorite] ||
+        g.away === scheduleTeams[preferences.favorite])
+    );
+  }
+  function eventLabel(g) {
+    return g.sport === "baseball"
+      ? `${g.home} × ${g.away}`
+      : `日本 × ${g.opponent}`;
+  }
+  function paintCalendar() {
+    if (!data) return;
+    const [y, m] = calendarMonth.split("-").map(Number);
+    const offset = new Date(Date.UTC(y, m - 1, 1)).getUTCDay(),
+      count = new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const events = filteredCalendarEvents();
+    $("calendar-filter-note").textContent =
+      calendarFilter === "favorite"
+        ? preferences.favorite === "all"
+          ? "設定で応援球団を選ぶと、その球団の試合を表示します。"
+          : teams[preferences.favorite] + "の試合だけを表示しています。"
+        : "";
+    $("calendar-month").textContent = `${y}年${m}月`;
+    $("calendar-coverage").textContent =
+      `野球：取得月（${data.today.slice(0, 7)}）の前月〜翌々月の公表済み日程。サッカー：${data.year}年の公式日程（翌年分の掲載を含む）。空欄は表示対象の試合が取得済み日程にない日です。${!data.baseballGames.ok || !data.footballGames.ok ? "一部の日程を取得できていません。公式日程をご確認ください。" : ""}`;
+    const out = ["日", "月", "火", "水", "木", "金", "土"].map(
+      (d) => `<div class="weekday">${d}</div>`,
+    );
+    for (let i = 0; i < offset; i++)
+      out.push('<div class="calendar-blank"></div>');
+    for (let n = 1; n <= count; n++) {
+      const day = `${calendarMonth}-${String(n).padStart(2, "0")}`,
+        games = events.filter((g) => g.date === day);
+      out.push(
+        `<button class="calendar-day ${day === currentDay() ? "today" : ""} ${day === selectedDay ? "chosen" : ""}" data-day="${day}" aria-pressed="${day === selectedDay}" aria-label="${day}、${games.length}試合"><span class="day-number">${n}</span>${
+          games.length
+            ? `<span class="calendar-counts" aria-hidden="true">${[
+                "baseball",
+                "football",
+              ]
+                .map((sport) => {
+                  const total = games.filter((g) => g.sport === sport).length;
+                  return total
+                    ? `<span class="day-count ${sport}">${sport === "baseball" ? "⚾" : "⚽"}${total}</span>`
+                    : "";
+                })
+                .join(
+                  "",
+                )}${games.some(isFavorite) ? '<span class="calendar-favorite">★</span>' : ""}</span>`
+            : ""
+        }${games
+          .slice(0, 3)
+          .map(
+            (g) =>
+              `<span class="calendar-event ${g.sport} ${isFavorite(g) ? "favorite" : ""}">${g.sport === "baseball" ? "⚾" : "⚽"} ${isFavorite(g) ? "★ " : ""}${esc(eventLabel(g))}${g.status === "finished" ? " " + esc(finishedScore(g)) : ""}</span>`,
+          )
+          .join(
+            "",
+          )}${games.length > 3 ? `<span class="more-games">ほか${games.length - 3}試合</span>` : ""}</button>`,
+      );
+    }
+    $("calendar").innerHTML = out.join("");
+    $("day-title").textContent = date(selectedDay) + "の試合";
+    const games = events.filter((g) => g.date === selectedDay);
+    $("day-games").innerHTML = games.length
+      ? games
+          .map(
+            (g) =>
+              `<div class="calendar-detail-game ${g.sport}"><b>${g.sport === "baseball" ? "⚾" : "⚽"} ${isFavorite(g) ? "★ " : ""}${esc(eventLabel(g))}</b><span>${esc(gameState(g))} · ${esc(g.venue)}</span></div>`,
+          )
+          .join("")
+      : empty(
+          "表示対象の試合は取得済みの日程にありません。未発表・取得範囲外の日程は公式サイトをご確認ください。",
+        );
+  }
+  function filteredCalendarEvents() {
+    return calendarEvents().filter(
+      (g) =>
+        calendarFilter === "all" ||
+        (calendarFilter === "favorite" && isFavorite(g)) ||
+        g.sport === calendarFilter,
+    );
+  }
+  scope.listen($("calendar-filters"), "click", (e) => {
+    const b = e.target.closest("[data-calendar-filter]");
+    if (!b) return;
+    calendarFilter = b.dataset.calendarFilter;
+    $("calendar-filters")
+      .querySelectorAll("button")
+      .forEach((el) => {
+        const chosen = el === b;
+        el.classList.toggle("selected", chosen);
+        el.setAttribute("aria-pressed", String(chosen));
+      });
+    paintCalendar();
+  });
+  function shiftDay(day, offset) {
+    const d = new Date(day + "T00:00:00Z");
+    d.setUTCDate(d.getUTCDate() + offset);
+    return d.toISOString().slice(0, 10);
+  }
+  function finishedScore(g) {
+    const baseball = g.sport === "baseball" || Object.hasOwn(g, "homeScore");
+    const a = baseball ? g.homeScore : g.japanScore,
+      b = baseball ? g.awayScore : g.opponentScore;
+    if (!validScore(a, b)) return "終了 · スコア未取得";
+    const pk = !baseball
+      ? (g.score || "").match(/PK\s*\d+\s*[-－–−]\s*\d+/i)?.[0]
+      : null;
+    return `${a} − ${b} · 終了${pk ? " · " + pk : ""}`;
+  }
+  function gameState(g) {
+    return g.status === "finished"
+      ? finishedScore(g)
+      : g.status === "cancelled"
+        ? "中止・延期"
+        : g.status === "inprogress"
+          ? "試合中（取得時点）"
+          : g.time
+            ? g.time +
+              (g.sport === "football" ? " キックオフ（日本時間）" : " 予定")
+            : "開始時刻は公式で確認";
+  }
+  function homeGames(games) {
+    return games
+      .map(
+        (g) =>
+          `<div class="home-game ${g.sport}"><div><span class="home-game-date">${date(g.date)} · ${g.sport === "baseball" ? "⚾ 野球" : "⚽ 日本代表"}</span><b>${isFavorite(g) ? "★ " : ""}${esc(eventLabel(g))}</b><small>${esc(g.venue)}</small></div><span class="home-game-state">${esc(gameState(g))}</span></div>`,
+      )
+      .join("");
+  }
+  function titleGap(player, top, cat) {
+    const difference = Math.abs(Number(player.value) - Number(top.value));
+    if (difference < 1e-9) return "首位（差なし）";
+    const decimals = ["avg", "obp", "pct"].includes(cat.id)
+      ? 3
+      : cat.id === "era"
+        ? 2
+        : 0;
+    return difference.toFixed(decimals) + (cat.unit ? " " + cat.unit : "");
+  }
+  function paintHome() {
+    if (!data) return;
+    const today = currentDay(),
+      tomorrow = shiftDay(today, 1);
+    const events = calendarEvents().sort(
+      (a, b) =>
+        a.date.localeCompare(b.date) ||
+        (a.time || "99:99").localeCompare(b.time || "99:99"),
+    );
+    for (const [key, games] of [
+      ["today", events.filter((g) => g.date === today)],
+      ["tomorrow", events.filter((g) => g.date === tomorrow)],
+    ]) {
+      $(key + "-count").textContent = games.length + "試合";
+      $(key + "-games").innerHTML = games.length
+        ? homeGames(games)
+        : empty("取得済みの日程に試合の掲載はありません。");
+    }
+    $("today-range").textContent = date(today);
+    $("tomorrow-range").textContent = date(tomorrow);
+    $("home-schedule-note").textContent =
+      "日本時間 · 終了した試合はスコアを表示。公表済み・取得範囲内の日程です。試合速報ではありません。" +
+      (!data.baseballGames.ok || !data.footballGames.ok
+        ? " 一部の日程を取得できていないため、試合数は取得成功分のみです。"
+        : "");
+  }
+  scope.listen($("calendar"), "click", (e) => {
+    const b = e.target.closest("[data-day]");
+    if (b) {
+      const focused = document.activeElement === b;
+      selectedDay = b.dataset.day;
+      paintCalendar();
+      if (focused)
+        $("calendar").querySelector(`[data-day="${selectedDay}"]`).focus();
+    }
+  });
+  function moveMonth(delta) {
+    const [y, m] = calendarMonth.split("-").map(Number);
+    calendarMonth = new Date(Date.UTC(y, m - 1 + delta, 1))
+      .toISOString()
+      .slice(0, 7);
+    selectedDay = calendarMonth + "-01";
+    paintCalendar();
+  }
+  scope.listen($("month-prev"), "click", () => moveMonth(-1));
+  scope.listen($("month-next"), "click", () => moveMonth(1));
+  scope.listen($("month-today"), "click", () => {
+    calendarMonth = currentDay().slice(0, 7);
+    selectedDay = currentDay();
+    paintCalendar();
+  });
+  function completedFootball() {
+    const source = data.footballHistory || data.footballGames;
+    return source?.ok
+      ? [...source.data]
+          .filter((g) => g.status === "finished" && g.date <= currentDay())
+          .sort((a, b) => b.date.localeCompare(a.date))
+      : [];
+  }
+  function validScore(a, b) {
+    return Number.isInteger(a) && Number.isInteger(b) && a >= 0 && b >= 0;
+  }
+  function footballOutcome(g) {
+    const result =
+      g.result ||
+      (validScore(g.japanScore, g.opponentScore)
+        ? g.japanScore > g.opponentScore
+          ? "win"
+          : g.japanScore < g.opponentScore
+            ? "loss"
+            : "draw"
+        : null);
+    return (
+      (result === "win"
+        ? "勝ち"
+        : result === "loss"
+          ? "負け"
+          : result === "draw"
+            ? "引き分け"
+            : "結果未取得") + (/PK/i.test(g.score || "") ? "（PK戦）" : "")
+    );
+  }
+  function footballResultCard(g) {
+    const score = validScore(g.japanScore, g.opponentScore)
+      ? `${g.japanScore} − ${g.opponentScore}`
+      : "スコア未取得";
+    const pk = (g.score || "").match(/PK\s*\d+\s*[-－–−]\s*\d+/i)?.[0];
+    return `<div class="result-match"><span class="result-date">${date(g.date)} · ${esc(footballOutcome(g))}</span><h4>日本 <strong>${score}</strong> ${esc(g.opponent)}</h4>${pk ? `<p>${esc(pk)}</p>` : ""}<p>${esc(g.competition || "")}</p><small>${esc(g.venue || "")}</small><a href="${esc(g.url || "https://www.jfa.jp/samuraiblue/")}" target="_blank" rel="noopener noreferrer">JFA公式結果 ↗</a></div>`;
+  }
+  function paintRecentResults() {
+    if (!data) return;
+    const club = preferences.favorite;
+    $("baseball-results-heading").textContent =
+      club === "all" ? "最近終了した試合" : teams[club] + "の直近5試合";
+    const source = data.baseballResults;
+    if (!source?.ok)
+      $("baseball-results").innerHTML = empty(
+        "試合結果を取得できませんでした。NPB公式日程をご確認ください。",
+      );
+    else {
+      const games = [...source.data]
+        .filter(
+          (g) =>
+            g.status === "finished" &&
+            g.date <= currentDay() &&
+            (club === "all" || isFavorite(g)),
+        )
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, club === "all" ? 12 : 5);
+      $("baseball-results").innerHTML = games.length
+        ? `<div class="recent-result-list">${games
+            .map((g) => {
+              const scored = validScore(g.homeScore, g.awayScore),
+                favoriteScore =
+                  g.home === scheduleTeams[club] ? g.homeScore : g.awayScore,
+                otherScore =
+                  g.home === scheduleTeams[club] ? g.awayScore : g.homeScore;
+              const outcome = !scored
+                ? "スコア未取得"
+                : club === "all"
+                  ? "終了"
+                  : favoriteScore > otherScore
+                    ? "勝ち"
+                    : favoriteScore < otherScore
+                      ? "負け"
+                      : "引き分け";
+              return `<a class="recent-result" data-result-key="${esc("game:baseball:" + g.date + ":" + g.home + ":" + g.away)}" href="${esc(g.url || source.source)}" target="_blank" rel="noopener noreferrer"><time>${date(g.date)}</time><span class="result-outcome">${outcome}</span><b>${esc(g.home)} <strong>${scored ? `${g.homeScore} − ${g.awayScore}` : "—"}</strong> ${esc(g.away)}</b><small>${esc(g.venue)} ↗</small></a>`;
+            })
+            .join(
+              "",
+            )}</div>${games.length < 5 ? '<p class="source-time">取得範囲内の終了試合が5試合未満のため、確認できた分だけ表示しています。</p>' : ""}`
+        : empty(
+            "取得範囲内に終了した試合はありません。今季の取得済み日程を確認しています。",
+          );
+    }
+    const history = data.footballHistory || data.footballGames;
+    const last = completedFootball()[0];
+    $("football-result").innerHTML = !history?.ok
+      ? empty("代表戦の結果を取得できませんでした。")
+      : last
+        ? footballResultCard(last)
+        : empty("取得済みの日程に終了した代表戦はありません。");
+  }
+  function paintOpponentProfile() {
+    if (!data) return;
+    const game = nextFootballGame();
+    if (!game) {
+      $("opponent-profile").innerHTML = empty(
+        "次の代表戦が未発表、または日程を取得できませんでした。",
+      );
+      return;
+    }
+    const rows = data.fifa.ok ? data.fifa.data.rows : [],
+      opponent = matchedOpponent(game, rows),
+      jp = rows.find((r) => r.code === "JPN");
+    const history = data.footballHistory || data.footballGames;
+    const headToHead = completedFootball().find(
+      (g) =>
+        g.opponent.replace(/代表$/, "").trim() ===
+        game.opponent.replace(/代表$/, "").trim(),
+    );
+    const gap = opponent && jp ? opponent.points - jp.points : null;
+    $("opponent-profile").innerHTML =
+      `<div class="opponent-intro"><span class="eyebrow">NEXT OPPONENT / ${date(game.date)}</span><h4>${esc(game.opponent)}</h4>${opponent && jp ? `<div class="opponent-numbers"><span><b>${opponent.rank}位</b>FIFAランキング</span><span><b>${number(opponent.points)} pts</b>最新公式ポイント</span></div><p>${Math.abs(gap) < 0.005 ? "日本と同ポイント" : `日本より ${number(Math.abs(gap))} pts ${gap > 0 ? "上" : "下"}`}</p>` : "<p>FIFA順位・ポイントを取得または照合できませんでした。</p>"}<h5>直近の日本との対戦</h5></div>${!history?.ok ? empty("過去の対戦結果を取得できませんでした。") : headToHead ? footballResultCard(headToHead) : empty("取得した直近3年分の公式日程に、この相手との対戦結果は見つかりませんでした。")}<p class="source-time">FIFAは最新公式発表、対戦結果は取得した過去3年分の男子代表日程が対象です。</p>`;
+  }
+  const draftCategories = [
+    { id: "avg", label: "打率", type: "bat", decimals: 3, rate: true },
+    { id: "hr", label: "本塁打", type: "bat", unit: "本" },
+    { id: "h", label: "安打", type: "bat", unit: "安打" },
+    { id: "rbi", label: "打点", type: "bat", unit: "点" },
+    { id: "w", label: "勝利", type: "pit", unit: "勝" },
+    {
+      id: "era",
+      label: "防御率",
+      type: "pit",
+      decimals: 2,
+      rate: true,
+      low: true,
+    },
+    { id: "sv", label: "セーブ", type: "pit", unit: "S" },
+  ];
+  let draftYear = null,
+    selectedDraftYear = null,
+    draftState,
+    draftCategory = "avg";
+  const draftSearches = new Map();
+  const draftSearchKey = (army, round) => `${draftCategory}-${army}-${round}`;
+  const normalizePlayerSearch = (value) =>
+    value.normalize("NFKC").replace(/\s/g, "").toLowerCase();
+  const draftPickKey = (pick, year = draftYear) =>
+    Number(year) >= 2027
+      ? normalizePlayerSearch(pick.name)
+      : pick.team + "|" + normalizePlayerSearch(pick.name);
+  function draftOtherPicks(category, exclude) {
+    return (
+      draftYear >= 2027
+        ? Object.values(draftState.picks).flat(2)
+        : draftState.picks[category].flat()
+    ).filter((p) => p?.name && p !== exclude);
+  }
+  function draftPickUsed(pick, category, exclude) {
+    return draftOtherPicks(category, exclude).some(
+      (p) => draftPickKey(p) === draftPickKey(pick),
+    );
+  }
+  function draftDuplicateNames(state, year) {
+    const used = new Set(),
+      duplicates = new Set();
+    for (const [category, armies] of Object.entries(state.picks))
+      for (const pick of armies.flat())
+        if (pick?.name) {
+          const key =
+            (Number(year) >= 2027 ? "" : category + "|") +
+            draftPickKey(pick, year);
+          if (used.has(key)) duplicates.add(pick.name);
+          used.add(key);
+        }
+    return [...duplicates];
+  }
+  const historyViews = new WeakMap();
+  function validDraftTeam(team, name, category, year) {
+    return (
+      Object.hasOwn(teams, team) ||
+      (Number(year) === 2026 &&
+        category === "era" &&
+        team === "MLB" &&
+        (name === "" || name === "今井 達也"))
+    );
+  }
+  function draftTeamEntries(cat) {
+    return [
+      ...Object.entries(teams),
+      ...(draftYear === 2026 && cat.id === "era"
+        ? [["MLB", "特別枠（MLB）"]]
+        : []),
+    ];
+  }
+  function historyView(snapshot, year) {
+    if (historyViews.has(snapshot)) return historyViews.get(snapshot);
+    const clubs = {},
+      leaders = {
+        avg: { c: { ok: true, data: [] }, p: { ok: true, data: [] } },
+        era: { c: { ok: true, data: [] }, p: { ok: true, data: [] } },
+      };
+    for (const row of snapshot.rows) {
+      const [team, name] = row,
+        league = "神巨デ広ヤ中".includes(team) ? "c" : "p",
+        source = `https://npb.jp/bis/${year}/stats/`;
+      clubs[team] ??= {
+        bat: { ok: true, data: [], source, fetchedAt: snapshot.generatedAt },
+        pit: { ok: true, data: [], source, fetchedAt: snapshot.generatedAt },
+      };
+      const values = Object.fromEntries(
+        ["avg", "hr", "h", "rbi", "w", "era", "sv"].map((id, i) => [
+          id,
+          row[i + 2],
+        ]),
+      );
+      if (["avg", "hr", "h", "rbi"].some((id) => values[id] !== null))
+        clubs[team].bat.data.push({ team, name, values });
+      if (["w", "era", "sv"].some((id) => values[id] !== null))
+        clubs[team].pit.data.push({ team, name, values });
+      if (row[9])
+        leaders.avg[league].data.push({ team, name, value: values.avg });
+      if (row[10])
+        leaders.era[league].data.push({ team, name, value: values.era });
+    }
+    const view = {
+      year,
+      generatedAt: snapshot.generatedAt,
+      available: true,
+      draft: { clubs, seasonComplete: snapshot.seasonComplete },
+      leaders,
+    };
+    historyViews.set(snapshot, view);
+    return view;
+  }
+  function draftDataForYear() {
+    if (draftYear === data.year) return data;
+    const season = data.draftHistory?.seasons?.[draftYear],
+      snapshot = season?.months?.[season.latestMonth];
+    return snapshot
+      ? historyView(snapshot, draftYear)
+      : {
+          year: draftYear,
+          available: false,
+          draft: { clubs: {}, seasonComplete: false },
+          leaders: {},
+        };
+  }
+  function draftRoster(cat, team) {
+    if (draftYear === 2026 && cat.id === "era" && team === "MLB")
+      return {
+        ok: true,
+        data: [{ team: "MLB", name: "今井 達也", values: { era: null } }],
+      };
+    const stats = draftDataForYear();
+    return (
+      stats.draft?.clubs?.[team]?.[cat.type] ||
+      (draftYear > data.year ? data.draft?.clubs?.[team]?.[cat.type] : null)
+    );
+  }
+  function paintDraftYears() {
+    const years = new Set([2026, 2027, 2028, data.year, draftYear]);
+    for (let year = 2026; year <= data.year + 2; year++) years.add(year);
+    for (const year of Object.keys(data.draftHistory?.seasons || {}))
+      years.add(Number(year));
+    try {
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const match = window.localStorage
+          .key(i)
+          ?.match(/^sports-desk-draft-v1-(\d{4})$/);
+        if (match) years.add(Number(match[1]));
+      }
+    } catch {}
+    $("draft-year-select").innerHTML = [...years]
+      .filter((year) => year >= 2026 && year <= 2200)
+      .sort((a, b) => a - b)
+      .map(
+        (year) =>
+          `<option value="${year}" ${year === draftYear ? "selected" : ""}>${year}年度</option>`,
+      )
+      .join("");
+    $("draft-year-select").value = String(draftYear);
+  }
+  scope.listen($("draft-year-select"), "change", () => {
+    const year = Number($("draft-year-select").value);
+    if (!Number.isInteger(year) || year < 2026 || year > 2200) return;
+    selectedDraftYear = year;
+    draftSearches.clear();
+    paintDraft();
+    $("draft-save-status").textContent =
+      `${year}年度の指名を表示しています。年度ごとに別々に保存します。`;
+  });
+  function emptyDraft() {
+    return {
+      names: ["A軍", "B軍"],
+      locked: false,
+      picks: Object.fromEntries(
+        draftCategories.map((cat) => [
+          cat.id,
+          [Array(5).fill(null), Array(5).fill(null)],
+        ]),
+      ),
+    };
+  }
+  function loadDraft() {
+    const year = selectedDraftYear ?? data.year;
+    if (draftYear === year) return;
+    draftYear = year;
+    draftState = emptyDraft();
+    try {
+      const saved = JSON.parse(
+        window.localStorage.getItem("sports-desk-draft-v1-" + draftYear) ||
+          "null",
+      );
+      if (saved) {
+        draftState.locked = saved.locked === true;
+        for (let army = 0; army < 2; army++) {
+          if (
+            typeof saved.names?.[army] === "string" &&
+            saved.names[army].trim()
+          )
+            draftState.names[army] = saved.names[army].slice(0, 24);
+          for (const cat of draftCategories) {
+            const used = new Set(
+              draftState.picks[cat.id]
+                .flat()
+                .filter((p) => p?.name)
+                .map((p) => p.team + "|" + p.name),
+            );
+            for (let round = 0; round < 5; round++) {
+              const pick = saved.picks?.[cat.id]?.[army]?.[round];
+              if (
+                pick &&
+                validDraftTeam(pick.team, pick.name, cat.id, draftYear) &&
+                typeof pick.name === "string" &&
+                pick.name.length <= 80 &&
+                (!pick.name || !used.has(pick.team + "|" + pick.name))
+              ) {
+                draftState.picks[cat.id][army][round] = {
+                  team: pick.team,
+                  name: pick.name,
+                };
+                if (pick.name) used.add(pick.team + "|" + pick.name);
+              }
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+  function saveDraft() {
+    try {
+      window.localStorage.setItem(
+        "sports-desk-draft-v1-" + draftYear,
+        JSON.stringify(draftState),
+      );
+      $("draft-save-status").textContent =
+        "保存しました。このブラウザーで次回も反映します。設定のJSON保存・読み込みで別ブラウザーに引き継げます。";
+    } catch {
+      $("draft-save-status").textContent =
+        "ブラウザーに保存できませんでした。指名はこの画面を開いている間だけ反映します。";
+    }
+  }
+  function draftValue(cat, pick, stats = draftDataForYear()) {
+    if (!pick?.name) return { status: "未選択" };
+    if (draftYear >= 2027 && draftPickUsed(pick, cat.id, pick))
+      return { status: "重複指名" };
+    if (
+      draftYear === 2026 &&
+      cat.id === "era" &&
+      pick.team === "MLB" &&
+      pick.name === "今井 達也"
+    )
+      return { status: "計測不可", excluded: true };
+    if (stats.available === false) return { status: "年度成績未公開" };
+    const source = stats.draft?.clubs?.[pick.team]?.[cat.type];
+    if (!source?.ok) return { status: "取得失敗" };
+    const player = source.data.find((p) => p.name === pick.name);
+    if (!player) return { status: "掲載なし" };
+    if (cat.rate) {
+      const league = "神巨デ広ヤ中".includes(pick.team) ? "c" : "p",
+        qualified = stats.leaders?.[cat.id]?.[league];
+      if (!qualified?.ok) return { status: "規定確認失敗" };
+      const normalize = (s) => s.replace(/\s/g, "");
+      if (
+        !qualified.data.some(
+          (p) =>
+            p.team === pick.team && normalize(p.name) === normalize(pick.name),
+        )
+      )
+        return { status: "規定未達", excluded: true };
+    }
+    const raw = player.values[cat.id];
+    if (
+      raw === null ||
+      raw === undefined ||
+      raw === "" ||
+      !Number.isFinite(Number(raw)) ||
+      Number(raw) < 0
+    )
+      return { status: "成績不明" };
+    return { value: Number(raw), status: "ok" };
+  }
+  function draftTotal(cat, army, stats = draftDataForYear()) {
+    const picks = draftState.picks[cat.id][army],
+      values = picks.map((p) => draftValue(cat, p, stats));
+    const included = values.filter((v) => v.status === "ok"),
+      missing = values.some((v) => v.status !== "ok" && !v.excluded);
+    const total =
+      included.reduce(
+        (sum, v) =>
+          sum + Math.round(v.value * (cat.rate ? 10 ** cat.decimals : 1)),
+        0,
+      ) / (cat.rate ? 10 ** cat.decimals : 1);
+    return {
+      value: included.length
+        ? cat.rate
+          ? total / included.length
+          : total
+        : null,
+      count: included.length,
+      selected: picks.filter((p) => p?.name).length,
+      ready: !missing && included.length > 0,
+    };
+  }
+  function draftNumber(cat, value) {
+    return value === null
+      ? "—"
+      : cat.rate
+        ? value.toFixed(cat.decimals)
+        : String(value);
+  }
+  function draftDecision(cat, a, b) {
+    if (!a.ready || !b.ready) return -1;
+    if (Math.abs(a.value - b.value) < 1e-9) return 2;
+    return (cat.low ? a.value < b.value : a.value > b.value) ? 0 : 1;
+  }
+  function draftPlayerOptions(cat, army, round, query = "") {
+    const pick = draftState.picks[cat.id][army][round],
+      source = draftRoster(cat, pick?.team),
+      pool = source?.ok ? source.data : [],
+      other = draftOtherPicks(cat.id, pick),
+      needle = normalizePlayerSearch(query);
+    const matches = pool.filter((p) =>
+      normalizePlayerSearch(p.name).includes(needle),
+    );
+    const visible = pool.filter(
+      (p) => matches.includes(p) || p.name === pick?.name,
+    );
+    const html = `<option value="">${!pick?.team ? "球団を先に選択" : !source?.ok ? "成績を取得できません" : matches.length ? "選手を選択" : "一致する選手なし"}</option>${pick?.name && !pool.some((p) => p.name === pick.name) ? `<option value="${esc(pick.name)}" selected>${esc(pick.name)}（掲載なし）</option>` : ""}${visible
+      .map((p) => {
+        const used = other.some((o) => draftPickKey(o) === draftPickKey(p));
+        return `<option value="${esc(p.name)}" ${p.name === pick?.name ? "selected" : ""} ${used ? "disabled" : ""}>${esc(p.name)}${used ? "（指名済み）" : !matches.includes(p) ? "（選択中）" : ""}</option>`;
+      })
+      .join("")}`;
+    return {
+      html,
+      count: matches.length,
+      enabled: !!pick?.team && !!source?.ok,
+    };
+  }
+  function paintDraft() {
+    if (!data) return;
+    const draftFocus = document.activeElement?.closest?.("[data-draft-field]");
+    const focusSlot = draftFocus
+      ? {
+          field: draftFocus.dataset.draftField,
+          army: draftFocus.dataset.army,
+          round: draftFocus.dataset.round,
+        }
+      : null;
+    loadDraft();
+    paintDraftYears();
+    const draftData = draftDataForYear();
+    $("draft-year").textContent = draftYear + "年";
+    $("draft-season").textContent = draftData.draft?.seasonComplete
+      ? "公式戦 全日程終了"
+      : draftData.available === false
+        ? "年度成績 未公開"
+        : "シーズン途中・取得時点";
+    $("draft-year-note").textContent =
+      draftYear > data.year
+        ? `${draftYear}年の成績はまだありません。${data.year}年掲載の選手で仮指名でき、対象年度の成績公開後に自動で集計します。`
+        : draftYear < data.year
+          ? "保存された対象年度の成績で集計します。"
+          : "この年度の公開成績を自動で反映します。";
+    const duplicates =
+      draftYear >= 2027 ? draftDuplicateNames(draftState, draftYear) : [];
+    $("draft-duplicate-warning").hidden = duplicates.length === 0;
+    $("draft-duplicate-warning").textContent = duplicates.length
+      ? `保存済みの指名に重複があります：${duplicates.join("、")}。重複した枠を選び直してください。修正するまで該当部門は判定待ちになります。保存済みの選手を自動で削除することはありません。`
+      : "";
+    $("draft-duplicate-rule").textContent =
+      draftYear >= 2027
+        ? "2027年度以降：両軍・全部門で同じ選手を指名できません。"
+        : "2026年度：同じ部門内は両軍を通して重複不可。別部門では指名できます。";
+    ["a", "b"].forEach((army, i) => {
+      if (document.activeElement !== $("draft-name-" + army))
+        $("draft-name-" + army).value = draftState.names[i];
+    });
+    let wins = [0, 0],
+      pending = 0,
+      ties = 0;
+    const overview = draftCategories
+      .map((cat) => {
+        const a = draftTotal(cat, 0),
+          b = draftTotal(cat, 1),
+          winner = draftDecision(cat, a, b);
+        if (winner === -1) pending++;
+        else if (winner === 2) ties++;
+        else wins[winner]++;
+        return `<tr><th scope="row"><button data-draft-category="${cat.id}">${esc(cat.label)} →</button></th>${[a, b].map((total, i) => `<td class="${winner === i ? "draft-winning" : ""}"><strong>${draftNumber(cat, total.value)}</strong><small>${cat.rate ? `規定対象 ${total.count}人` : `選択 ${total.selected}/5人`}${!total.ready ? " · 集計途中" : ""}</small></td>`).join("")}<td>${winner === -1 ? "判定待ち" : winner === 2 ? "引き分け" : esc(draftState.names[winner]) + " 優勢"}</td></tr>`;
+      })
+      .join("");
+    $("draft-overview").innerHTML =
+      `<table class="draft-overview-table"><thead><tr><th>部門</th><th>${esc(draftState.names[0])}</th><th>${esc(draftState.names[1])}</th><th>比較</th></tr></thead><tbody>${overview}</tbody></table>`;
+    $("draft-score").textContent =
+      `${draftState.names[0]} ${wins[0]}勝 ／ ${draftState.names[1]} ${wins[1]}勝 · 引分 ${ties} · 待ち ${pending}${draftData.draft?.seasonComplete && pending === 0 ? " · 最終比較" : " · 暫定比較"}${pending === 0 ? " ／ " + (wins[0] === wins[1] ? "総合引き分け" : draftState.names[wins[0] > wins[1] ? 0 : 1] + (draftData.draft?.seasonComplete ? "の総合勝利" : "が総合優勢")) : " ／ 総合は判定待ち"}`;
+    const cat = draftCategories.find((c) => c.id === draftCategory);
+    $("draft-editor-title").textContent = cat.label + "の部 · 第1巡〜第5巡";
+    $("draft-rule").textContent = cat.rate
+      ? `${cat.label}は規定対象者の平均。規定未達は「—」として平均から除外します。`
+      : `${cat.label}は選んだ5人の合計。各軍の球団・選手を選択してください。`;
+    $("draft-categories").innerHTML = draftCategories
+      .map(
+        (c) =>
+          `<button data-draft-category="${c.id}" aria-pressed="${c.id === draftCategory}" class="${c.id === draftCategory ? "selected" : ""}">${esc(c.label)}</button>`,
+      )
+      .join("");
+    const existingRows = [
+        ...$("draft-picks").querySelectorAll("details[data-draft-editor]"),
+      ],
+      sameCategory = existingRows.some(
+        (row) =>
+          row.dataset.category === cat.id &&
+          row.dataset.year === String(draftYear),
+      ),
+      expanded = new Set(
+        existingRows
+          .filter((row) => row.hasAttribute("open"))
+          .map((row) => row.dataset.draftEditor),
+      );
+    $("draft-picks").innerHTML = [0, 1]
+      .map(
+        (army) =>
+          `<section class="draft-army draft-army-${army}" aria-label="${esc(draftState.names[army])}"><h4>${emblemHtml(seasonExtras().emblems[army])}${esc(draftState.names[army])}</h4>${draftState.picks[
+            cat.id
+          ][army]
+            .map((pick, round) => {
+              const value = draftValue(cat, pick),
+                query = draftSearches.get(draftSearchKey(army, round)) || "",
+                picker = draftPlayerOptions(cat, army, round, query);
+              return `<details class="draft-round" data-draft-editor="${army}-${round}" data-category="${cat.id}" data-year="${draftYear}" ${sameCategory && expanded.has(army + "-" + round) ? "open" : ""}><summary><span class="draft-round-label">第${round + 1}巡</span><span class="draft-summary-name">${pick?.name ? playerLink(pick.team, pick.name, draftYear) : "未指名"}<small>${pick?.team ? esc(teams[pick.team] || "特別枠（MLB）") : "タップして選手を選択"}</small></span><span class="draft-summary-value">${value.status === "ok" ? draftNumber(cat, value.value) : "—"}<small>${value.status === "ok" ? cat.unit || "現在の成績" : value.status}</small></span></summary><div class="draft-round-editor"><label>球団<select data-draft-field="team" data-army="${army}" data-round="${round}" aria-label="${esc(draftState.names[army])} 第${round + 1}巡 球団"><option value="">球団を選択</option>${draftTeamEntries(
+                cat,
+              )
+                .map(
+                  ([code, label]) =>
+                    `<option value="${code}" ${pick?.team === code ? "selected" : ""}>${esc(label)}</option>`,
+                )
+                .join(
+                  "",
+                )}</select></label><div class="draft-player-picker"><label>選手名を検索<input type="search" data-draft-search data-army="${army}" data-round="${round}" value="${esc(query)}" placeholder="名前の一部を入力" maxlength="80" aria-label="${esc(draftState.names[army])} 第${round + 1}巡 選手名を検索" aria-controls="draft-player-${army}-${round}" ${picker.enabled ? "" : "disabled"}></label><label>選手<select id="draft-player-${army}-${round}" data-draft-field="name" data-army="${army}" data-round="${round}" aria-label="${esc(draftState.names[army])} 第${round + 1}巡 選手" ${picker.enabled ? "" : "disabled"}>${picker.html}</select></label><small class="draft-search-count" data-search-count="${army}-${round}" role="status">${picker.enabled ? `候補 ${picker.count}人` : ""}</small></div><div class="draft-current"><span>現在の成績</span><b>${value.status === "ok" ? draftNumber(cat, value.value) : "—"}</b><small>${value.status === "ok" ? cat.unit || "" : value.status}</small></div></div></details>`;
+            })
+            .join(
+              "",
+            )}<div class="draft-army-total">${cat.rate ? "平均" : "合計"} <strong>${draftNumber(cat, draftTotal(cat, army).value)}</strong> ${esc(cat.unit || "")}</div></section>`,
+      )
+      .join("");
+    // Setting explicit values also preserves selections in DOM-only verification tools.
+    $("draft-picks")
+      .querySelectorAll("select")
+      .forEach((el) => {
+        el.value =
+          draftState.picks[cat.id][Number(el.dataset.army)][
+            Number(el.dataset.round)
+          ]?.[el.dataset.draftField] || "";
+      });
+    $("draft-sources").innerHTML = Object.entries(draftData.draft?.clubs || {})
+      .map(
+        ([team, club]) =>
+          `<p class="source-time">${esc(teams[team])} · <a href="${esc(club.bat.source)}" target="_blank" rel="noopener noreferrer">打撃</a> ${esc(stamp(club.bat))} ／ <a href="${esc(club.pit.source)}" target="_blank" rel="noopener noreferrer">投手</a> ${esc(stamp(club.pit))}</p>`,
+      )
+      .join("");
+    paintDraftMonths(cat);
+    paintDraftComparison(cat);
+    paintDraftTools();
+    $("draft-lock").textContent = draftState.locked
+      ? "ロックを解除して編集"
+      : "指名を確定・ロック";
+    $("draft-lock").setAttribute("aria-pressed", String(draftState.locked));
+    $("draft-lock-status").textContent = draftState.locked
+      ? "この年度の指名・軍名をロック中です。成績は自動更新します。"
+      : "編集できます。未指名の枠があってもロックできます。";
+    for (const id of ["draft-name-a", "draft-name-b"])
+      $(id).disabled = draftState.locked;
+    if (draftState.locked)
+      $("draft-picks")
+        .querySelectorAll("input,select")
+        .forEach((el) => {
+          el.disabled = true;
+        });
+    if (focusSlot)
+      $("draft-picks")
+        .querySelector(
+          `[data-army="${focusSlot.army}"][data-round="${focusSlot.round}"][data-draft-field="${focusSlot.field}"]`,
+        )
+        ?.focus();
+  }
+  let draftView = "edit";
+  scope.listen($("draft-lock"), "click", () => {
+    if (!data) return;
+    draftState.locked = !draftState.locked;
+    saveDraft();
+    paintDraft();
+  });
+  scope.listen($("draft-view"), "click", (event) => {
+    const button = event.target.closest("[data-draft-view]");
+    if (!button) return;
+    draftView = button.dataset.draftView === "compare" ? "compare" : "edit";
+    if (data) paintDraft();
+  });
+  function paintDraftComparison(cat) {
+    $("draft-picks").hidden = draftView !== "edit";
+    $("draft-comparison").hidden = draftView !== "compare";
+    document.querySelectorAll("[data-draft-view]").forEach((button) => {
+      const selected = button.dataset.draftView === draftView;
+      button.classList.toggle("selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    });
+    $("draft-comparison").innerHTML =
+      `<div class="comparison-head"><span>${esc(draftState.names[0])}</span><span>${esc(draftState.names[1])}</span></div>${Array.from(
+        { length: 5 },
+        (_, round) => {
+          const picks = [0, 1].map(
+              (army) => draftState.picks[cat.id][army][round],
+            ),
+            values = picks.map((p) => draftValue(cat, p)),
+            both = values.every((v) => v.status === "ok"),
+            diff = both ? Math.abs(values[0].value - values[1].value) : null,
+            winner = both
+              ? Math.abs(diff) < 1e-9
+                ? 2
+                : cat.low
+                  ? values[0].value < values[1].value
+                    ? 0
+                    : 1
+                  : values[0].value > values[1].value
+                    ? 0
+                    : 1
+              : -1;
+          return `<section class="round-comparison"><h4>第${round + 1}巡</h4><div class="comparison-pair">${picks.map((pick, army) => `<div><strong>${pick?.name ? playerLink(pick.team, pick.name, draftYear) : "未指名"}</strong><small>${esc(teams[pick?.team] || (pick?.team === "MLB" ? "特別枠（MLB）" : ""))}</small><b>${values[army].status === "ok" ? draftNumber(cat, values[army].value) : "—"}</b><small>${esc(values[army].status === "ok" ? cat.unit || "現在の成績" : values[army].status)}</small></div>`).join("")}</div><p>${winner === -1 ? "比較待ち" : winner === 2 ? "同じ成績" : `${esc(draftState.names[winner])}が${draftNumber(cat, diff)}${esc(cat.unit || "")} ${cat.low ? "低い" : "上回る"}`}</p></section>`;
+        },
+      ).join(
+        "",
+      )}<p class="note">各巡の差は参考比較です。部門の勝敗は5人の合計・規定対象者の平均で判定します。</p>`;
+  }
+  scope.listen($("draft"), "click", (event) => {
+    const button = event.target.closest("[data-draft-category]");
+    if (!button || !data) return;
+    draftCategory = button.dataset.draftCategory;
+    const overview = !!button.closest("#draft-overview");
+    paintDraft();
+    const active = $("draft-categories").querySelector(
+      `[data-draft-category="${draftCategory}"]`,
+    );
+    active.focus();
+    if (overview)
+      $("draft-editor-title").scrollIntoView?.({
+        behavior: "smooth",
+        block: "start",
+      });
+  });
+  scope.listen($("draft-picks"), "input", (event) => {
+    if (draftState?.locked) return;
+    const input = event.target.closest("[data-draft-search]");
+    if (!input || !data) return;
+    const army = Number(input.dataset.army),
+      round = Number(input.dataset.round),
+      query = input.value.slice(0, 80),
+      cat = draftCategories.find((c) => c.id === draftCategory);
+    draftSearches.set(draftSearchKey(army, round), query);
+    const result = draftPlayerOptions(cat, army, round, query),
+      select = $(`draft-player-${army}-${round}`);
+    select.innerHTML = result.html;
+    select.value = draftState.picks[cat.id][army][round]?.name || "";
+    $("draft-picks").querySelector(
+      `[data-search-count="${army}-${round}"]`,
+    ).textContent =
+      `検索結果 ${result.count}人${result.count === 0 ? " · 選択中の選手は保持します" : ""}`;
+  });
+  scope.listen($("draft-picks"), "change", (event) => {
+    if (draftState?.locked) {
+      paintDraft();
+      return;
+    }
+    const el = event.target.closest("[data-draft-field]");
+    if (!el || !data) return;
+    const army = Number(el.dataset.army),
+      round = Number(el.dataset.round),
+      field = el.dataset.draftField,
+      slots = draftState.picks[draftCategory];
+    if (field === "team") {
+      draftSearches.delete(draftSearchKey(army, round));
+      if (el.value && !validDraftTeam(el.value, "", draftCategory, draftYear))
+        return;
+      slots[army][round] = el.value ? { team: el.value, name: "" } : null;
+    } else {
+      const pick = slots[army][round];
+      if (!pick) return;
+      const cat = draftCategories.find((c) => c.id === draftCategory),
+        source = draftRoster(cat, pick.team);
+      if (
+        el.value &&
+        (!source?.ok ||
+          !source.data.some((p) => p.name === el.value) ||
+          draftPickUsed(
+            { team: pick.team, name: el.value },
+            draftCategory,
+            pick,
+          ))
+      ) {
+        $("draft-save-status").textContent =
+          draftYear >= 2027
+            ? "全部門・両軍を通して指名済みの選手、または取得できない選手は選べません。"
+            : "同じ部門の指名済み選手、または取得できない選手は選べません。";
+        paintDraft();
+        return;
+      }
+      const changed = pick.name !== el.value;
+      pick.name = el.value;
+      if (changed && pick.name) announceDraft(army, round, pick);
+    }
+    saveDraft();
+    paintDraft();
+    $("draft-picks")
+      .querySelector(
+        `[data-army="${army}"][data-round="${round}"][data-draft-field="${field}"]`,
+      )
+      .focus();
+  });
+  ["a", "b"].forEach((army, i) =>
+    scope.listen($("draft-name-" + army), "change", () => {
+      if (!data) return;
+      if (draftState.locked) {
+        paintDraft();
+        return;
+      }
+      draftState.names[i] =
+        $("draft-name-" + army)
+          .value.trim()
+          .slice(0, 24) || (i === 0 ? "A軍" : "B軍");
+      saveDraft();
+      paintDraft();
+    }),
+  );
+  function paintDraftMonths(cat) {
+    $("draft-month-title").textContent =
+      `${draftYear}年 ${cat.label}の月ごとの推移`;
+    const season = data.draftHistory?.seasons?.[draftYear];
+    let previous = null;
+    const rows = [];
+    for (let month = 1; month <= 12; month++) {
+      const key = `${draftYear}-${String(month).padStart(2, "0")}`,
+        snapshot = season?.months?.[key];
+      if (!snapshot) {
+        rows.push(
+          `<tr><th scope="row">${month}月</th><td colspan="5">未記録</td></tr>`,
+        );
+        previous = null;
+        continue;
+      }
+      const stats = historyView(snapshot, draftYear),
+        totals = [0, 1].map((army) => draftTotal(cat, army, stats));
+      const delta = (total, army) => {
+        const prior = previous?.[army];
+        if (!prior?.ready || !total.ready) return "—";
+        const diff = total.value - prior.value;
+        return (
+          (diff > 0 ? "+" : "") +
+          diff.toFixed(cat.decimals || 0) +
+          (cat.unit ? " " + cat.unit : "")
+        );
+      };
+      rows.push(
+        `<tr><th scope="row">${month}月<small>${esc(new Date(snapshot.generatedAt).toLocaleDateString("ja-JP", { timeZone: "Asia/Tokyo" }))}時点</small></th>${totals.map((total, army) => `<td>${draftNumber(cat, total.value)}<small>${total.ready ? (cat.rate ? `規定 ${total.count}人` : "集計済み") : "集計途中"}</small></td><td>${delta(total, army)}</td>`).join("")}<td>${draftDecision(cat, ...totals) === -1 ? "判定待ち" : draftDecision(cat, ...totals) === 2 ? "引き分け" : esc(draftState.names[draftDecision(cat, ...totals)]) + " 優勢"}</td></tr>`,
+      );
+      previous = totals;
+    }
+    $("draft-monthly").innerHTML =
+      `<table class="draft-month-table"><thead><tr><th>保存月</th><th>${esc(draftState.names[0])}</th><th>前月差</th><th>${esc(draftState.names[1])}</th><th>前月差</th><th>比較</th></tr></thead><tbody>${rows.join("")}</tbody></table>`;
+  }
+  const extrasKey = "hibi-note-draft-extras-v1";
+  const emblemColors = {
+      lavender: "#776bb4",
+      blue: "#477d99",
+      green: "#43836b",
+      coral: "#b85b63",
+    },
+    emblemMarks = ["★", "⚾", "◆", "✦"];
+  const defaultEmblems = () => [
+    { color: "lavender", mark: "★", initial: "A" },
+    { color: "blue", mark: "◆", initial: "B" },
+  ];
+  const emptyExtras = () => ({ version: 1, animation: true, seasons: {} });
+  function validDateString(value) {
+    return (
+      typeof value === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+      Number.isFinite(Date.parse(value + "T00:00:00Z")) &&
+      new Date(value + "T00:00:00Z").toISOString().slice(0, 10) === value
+    );
+  }
+  function validInstant(value) {
+    return (
+      typeof value === "string" &&
+      value.length <= 40 &&
+      Number.isFinite(Date.parse(value))
+    );
+  }
+  function validateEmblems(value) {
+    if (!Array.isArray(value) || value.length !== 2)
+      throw Error("エンブレムの形式が正しくありません。");
+    return value.map((emblem) => {
+      backupKeys(emblem, ["color", "mark", "initial"]);
+      if (
+        !Object.hasOwn(emblemColors, emblem.color) ||
+        !emblemMarks.includes(emblem.mark) ||
+        typeof emblem.initial !== "string" ||
+        !emblem.initial.trim() ||
+        Array.from(emblem.initial).length > 3 ||
+        /[\u0000-\u001f<>]/.test(emblem.initial)
+      )
+        throw Error("エンブレムの形式が正しくありません。");
+      return { ...emblem };
+    });
+  }
+  function validateSeasonResult(result, year) {
+    backupKeys(result, [
+      "year",
+      "savedAt",
+      "generatedAt",
+      "names",
+      "emblems",
+      "departments",
+      "final",
+    ]);
+    if (
+      result.final !== true ||
+      result.year !== Number(year) ||
+      !validInstant(result.savedAt) ||
+      !validInstant(result.generatedAt) ||
+      !Array.isArray(result.names) ||
+      result.names.length !== 2 ||
+      result.names.some(
+        (n) => typeof n !== "string" || !n.trim() || n.length > 24,
+      ) ||
+      !Array.isArray(result.departments) ||
+      result.departments.length !== 7
+    )
+      throw Error("保存結果の形式が正しくありません。");
+    const emblems = validateEmblems(result.emblems);
+    const used = new Set();
+    const departments = result.departments.map((row, i) => {
+      backupKeys(row, ["id", "totals", "players"]);
+      if (
+        row.id !== draftCategories[i].id ||
+        !Array.isArray(row.totals) ||
+        row.totals.length !== 2 ||
+        !Array.isArray(row.players) ||
+        row.players.length !== 2
+      )
+        throw Error("保存結果の部門が正しくありません。");
+      const totals = row.totals.map((total) => {
+        backupKeys(total, ["value", "count", "selected", "ready"]);
+        if (
+          typeof total.value !== "number" ||
+          !Number.isFinite(total.value) ||
+          total.value < 0 ||
+          !Number.isInteger(total.count) ||
+          total.count < 1 ||
+          total.count > 5 ||
+          total.selected !== 5 ||
+          total.ready !== true
+        )
+          throw Error("未完了の結果は保存できません。");
+        return { ...total };
+      });
+      const players = row.players.map((army) => {
+        if (!Array.isArray(army) || army.length !== 5)
+          throw Error("保存結果の指名数が正しくありません。");
+        return army.map((player) => {
+          backupKeys(player, ["team", "name", "value", "status"]);
+          if (
+            !validDraftTeam(player.team, player.name, row.id, year) ||
+            typeof player.name !== "string" ||
+            !player.name ||
+            player.name.length > 80 ||
+            typeof player.status !== "string" ||
+            !["ok", "規定未達", "計測不可"].includes(player.status) ||
+            (player.value !== null &&
+              (typeof player.value !== "number" ||
+                !Number.isFinite(player.value) ||
+                player.value < 0))
+          )
+            throw Error("保存結果の選手が正しくありません。");
+          return { ...player };
+        });
+      });
+      players.forEach((army, index) => {
+        const included = army.filter((p) => p.status === "ok"),
+          cat = draftCategories[i],
+          sum =
+            included.reduce(
+              (total, p) =>
+                total +
+                Math.round(p.value * (cat.rate ? 10 ** cat.decimals : 1)),
+              0,
+            ) / (cat.rate ? 10 ** cat.decimals : 1),
+          expected = cat.rate ? sum / included.length : sum;
+        if (
+          included.some((p) => p.value === null) ||
+          army.some((p) => p.status !== "ok" && p.value !== null) ||
+          included.length !== totals[index].count ||
+          Math.abs(expected - totals[index].value) > 1e-9
+        )
+          throw Error("保存結果の合計と個人成績が一致しません。");
+        for (const player of army) {
+          const key =
+            (Number(year) >= 2027 ? "" : row.id + "|" + player.team + "|") +
+            normalizePlayerSearch(player.name);
+          if (used.has(key)) throw Error("保存結果に重複指名があります。");
+          used.add(key);
+        }
+      });
+      return { id: row.id, totals, players };
+    });
+    return { ...result, names: [...result.names], emblems, departments };
+  }
+  function validateExtras(value) {
+    backupKeys(value, ["version", "animation", "seasons"]);
+    if (
+      value.version !== 1 ||
+      typeof value.animation !== "boolean" ||
+      !plainRecord(value.seasons) ||
+      Object.keys(value.seasons).length > 50
+    )
+      throw Error("追加データの形式が正しくありません。");
+    const seasons = {};
+    for (const [year, season] of Object.entries(value.seasons)) {
+      if (!/^\d{4}$/.test(year) || Number(year) < 2026 || Number(year) > 2200)
+        throw Error("追加データの年度が正しくありません。");
+      backupKeys(season, ["emblems", "prediction", "result"]);
+      const emblems = validateEmblems(season.emblems);
+      let prediction = null,
+        result = null;
+      if (season.prediction !== null) {
+        const p = season.prediction;
+        backupKeys(p, [
+          "central",
+          "pacific",
+          "winner",
+          "openOn",
+          "sealedAt",
+          "opened",
+          "names",
+        ]);
+        if (
+          !["神", "巨", "デ", "広", "ヤ", "中"].includes(p.central) ||
+          !["ソ", "西", "日", "オ", "ロ", "楽"].includes(p.pacific) ||
+          !["0", "1", "draw"].includes(p.winner) ||
+          !validDateString(p.openOn) ||
+          !validInstant(p.sealedAt) ||
+          typeof p.opened !== "boolean" ||
+          !Array.isArray(p.names) ||
+          p.names.length !== 2 ||
+          p.names.some(
+            (n) => typeof n !== "string" || !n.trim() || n.length > 24,
+          )
+        )
+          throw Error("予言封筒の形式が正しくありません。");
+        prediction = { ...p, names: [...p.names] };
+      }
+      if (season.result !== null)
+        result = validateSeasonResult(season.result, year);
+      seasons[year] = { emblems, prediction, result };
+    }
+    return { version: 1, animation: value.animation, seasons };
+  }
+  let draftExtras = emptyExtras();
+  try {
+    const stored = window.localStorage.getItem(extrasKey);
+    if (stored) draftExtras = validateExtras(JSON.parse(stored));
+  } catch {}
+  function seasonExtras() {
+    return (
+      draftExtras.seasons[String(draftYear)] || {
+        emblems: defaultEmblems(),
+        prediction: null,
+        result: null,
+      }
+    );
+  }
+  function updateExtras(mutator) {
+    try {
+      const next = JSON.parse(JSON.stringify(draftExtras));
+      mutator(next);
+      const valid = validateExtras(next);
+      window.localStorage.setItem(extrasKey, JSON.stringify(valid));
+      draftExtras = valid;
+      return true;
+    } catch (error) {
+      $("draft-tools-status").textContent =
+        "保存できませんでした。" + error.message;
+      return false;
+    }
+  }
+  function editSeason(next) {
+    return (next.seasons[String(draftYear)] ??= {
+      emblems: defaultEmblems(),
+      prediction: null,
+      result: null,
+    });
+  }
+  function emblemHtml(emblem) {
+    return `<span class="team-emblem emblem-${emblem.color}" aria-label="エンブレム ${esc(emblem.initial)} ${esc(emblem.mark)}">${esc(emblem.mark)} ${esc(emblem.initial)}</span>`;
+  }
+  function playerLink(team, player, year) {
+    return `<button type="button" class="player-link" data-player-team="${esc(team)}" data-player-name="${esc(player)}" data-player-year="${year}">${esc(player)}</button>`;
+  }
+  let dialogReturnFocus = null,
+    announcementTimer = null,
+    sharedSnapshot = null,
+    sharedImage = null,
+    predictionFormYear = null;
+  function openToolDialog(id) {
+    const dialog = $(id);
+    dialogReturnFocus = document.activeElement;
+    dialog.hidden = false;
+    if (typeof dialog.showModal === "function") dialog.showModal();
+    else dialog.setAttribute("open", "");
+    dialog.querySelector("button")?.focus();
+  }
+  function closeToolDialog(id) {
+    const dialog = $(id);
+    if (typeof dialog.close === "function") dialog.close();
+    else dialog.removeAttribute("open");
+    dialog.hidden = true;
+    dialogReturnFocus?.focus?.();
+  }
+  for (const id of ["player-dialog", "share-dialog"])
+    scope.listen($(id), "cancel", () => {
+      $(id).hidden = true;
+    });
+  scope.listen(document, "click", (event) => {
+    const close = event.target.closest("[data-close-dialog]");
+    if (close) {
+      closeToolDialog(close.dataset.closeDialog);
+      return;
+    }
+    const button = event.target.closest("[data-player-name]");
+    if (!button || !data) return;
+    event.preventDefault();
+    event.stopPropagation();
+    showPlayer(
+      button.dataset.playerTeam,
+      button.dataset.playerName,
+      Number(button.dataset.playerYear),
+    );
+  });
+  function showPlayer(team, player, year) {
+    const stats =
+      year === data.year
+        ? data
+        : (() => {
+            const season = data.draftHistory?.seasons?.[year],
+              snapshot = season?.months?.[season.latestMonth];
+            return snapshot ? historyView(snapshot, year) : null;
+          })();
+    const club = stats?.draft?.clubs?.[team],
+      sources = [club?.bat, club?.pit],
+      rows = sources
+        .filter((s) => s?.ok)
+        .flatMap((s) =>
+          s.data.filter(
+            (p) =>
+              normalizePlayerSearch(p.name) === normalizePlayerSearch(player),
+          ),
+        ),
+      values = Object.assign({}, ...rows.map((p) => p.values));
+    $("player-dialog-title").textContent = player;
+    $("player-dialog-subtitle").textContent =
+      `${year}年度 · ${teams[team] || "特別枠（MLB）"}${year !== data.year ? " · 保存された年度成績" : ""}`;
+    $("player-dialog-stats").innerHTML = draftCategories
+      .map((cat) => {
+        const raw = values[cat.id],
+          valid =
+            raw !== null &&
+            raw !== undefined &&
+            raw !== "" &&
+            Number.isFinite(Number(raw));
+        return `<div class="player-stat"><small>${cat.label}</small><strong>${valid ? draftNumber(cat, Number(raw)) : "—"}</strong><small>${valid ? cat.unit || "シーズン成績" : "成績未取得"}</small></div>`;
+      })
+      .join("");
+    $("player-dialog-note").textContent =
+      team === "MLB"
+        ? "特別枠の成績は計測不可です。"
+        : rows.length
+          ? "球団別の掲載成績です。打率・防御率は規定未達の選手も表示します。取得：" +
+            stamp(sources.find((s) => s?.ok))
+          : "この年度の球団別成績がないため表示できません。未来年度の仮指名は現在年度の詳細とは区別します。";
+    $("player-dialog-source").href = `https://npb.jp/bis/${year}/stats/`;
+    openToolDialog("player-dialog");
+  }
+  function announceDraft(army, round, pick) {
+    if (!draftExtras.animation || !pick?.name) return;
+    const box = $("draft-announcement");
+    $("announcement-title").textContent = `第${round + 1}巡 選択希望選手`;
+    $("announcement-player").textContent = pick.name;
+    $("announcement-team").textContent =
+      `${draftState.names[army]} · ${teams[pick.team] || "特別枠（MLB）"}`;
+    box.hidden = false;
+    if (announcementTimer && globalThis.clearTimeout)
+      scope.clearTimeout(announcementTimer);
+    announcementTimer = scope.setTimeout(() => {
+      box.hidden = true;
+    }, 6000);
+  }
+  scope.listen($("announcement-close"), "click", () => {
+    $("draft-announcement").hidden = true;
+  });
+  $("prediction-central").innerHTML = Object.entries(teams)
+    .filter(([key]) => "神巨デ広ヤ中".includes(key))
+    .map(([key, label]) => `<option value="${key}">${esc(label)}</option>`)
+    .join("");
+  $("prediction-pacific").innerHTML = Object.entries(teams)
+    .filter(([key]) => "ソ西日オロ楽".includes(key))
+    .map(([key, label]) => `<option value="${key}">${esc(label)}</option>`)
+    .join("");
+  $("draft-animation").checked = draftExtras.animation;
+  scope.listen($("draft-animation"), "change", () => {
+    const enabled = $("draft-animation").checked;
+    if (
+      !updateExtras((next) => {
+        next.animation = enabled;
+      })
+    )
+      $("draft-animation").checked = draftExtras.animation;
+    else {
+      $("settings-status").textContent = "指名演出の設定を保存しました。";
+      if (!enabled) $("draft-announcement").hidden = true;
+    }
+  });
+  scope.listen($("settings-reset"), "click", () => {
+    if (
+      updateExtras((next) => {
+        next.animation = true;
+      })
+    )
+      $("draft-animation").checked = true;
+    else
+      $("settings-status").textContent =
+        "指名演出の設定を保存できませんでした。保存済みの記録は保持しています。";
+  });
+  function currentDraftSnapshot() {
+    const stats = draftDataForYear();
+    return {
+      year: draftYear,
+      final: canSaveSeason(),
+      savedAt: new Date().toISOString(),
+      generatedAt: stats.generatedAt || data.generatedAt,
+      names: [...draftState.names],
+      emblems: JSON.parse(JSON.stringify(seasonExtras().emblems)),
+      departments: draftCategories.map((cat) => ({
+        id: cat.id,
+        totals: [0, 1].map((army) => draftTotal(cat, army)),
+        players: [0, 1].map((army) =>
+          draftState.picks[cat.id][army].map((pick) => {
+            const stat = draftValue(cat, pick);
+            return {
+              team: pick?.team || "",
+              name: pick?.name || "未指名",
+              value: stat.status === "ok" ? stat.value : null,
+              status: stat.status,
+            };
+          }),
+        ),
+      })),
+    };
+  }
+  function resultSummary(result) {
+    const wins = [0, 0];
+    let ties = 0,
+      pending = 0;
+    for (const row of result.departments) {
+      const cat = draftCategories.find((c) => c.id === row.id),
+        winner = draftDecision(cat, ...row.totals);
+      if (winner < 0) pending++;
+      else if (winner === 2) ties++;
+      else wins[winner]++;
+    }
+    return `${result.names[0]} ${wins[0]}勝 ／ ${result.names[1]} ${wins[1]}勝 · 引分 ${ties}${pending ? " · 判定待ち " + pending : wins[0] === wins[1] ? " · 総合引き分け" : " · " + result.names[wins[0] > wins[1] ? 0 : 1] + (result.final ? "の勝利" : "が優勢")}`;
+  }
+  function canSaveSeason() {
+    return (
+      !!draftState?.locked &&
+      !!draftDataForYear().draft?.seasonComplete &&
+      draftCategories.every((cat) =>
+        [0, 1].every((army) => {
+          const total = draftTotal(cat, army);
+          return total.ready && total.selected === 5;
+        }),
+      )
+    );
+  }
+  scope.listen($("season-save"), "click", () => {
+    if (!canSaveSeason() || seasonExtras().result) return;
+    $("draft-tools-status").textContent = "";
+    const result = currentDraftSnapshot();
+    if (
+      updateExtras((next) => {
+        editSeason(next).result = result;
+      })
+    ) {
+      $("draft-tools-status").textContent =
+        `${draftYear}年度の最終結果を保存しました。指名や取得データが変わっても保存結果は変わりません。`;
+      paintDraftTools();
+    }
+  });
+  scope.listen($("emblem-editors"), "change", (event) => {
+    const field = event.target.closest("[data-emblem-field]");
+    if (!field) return;
+    const army = Number(field.dataset.army),
+      key = field.dataset.emblemField;
+    if (![0, 1].includes(army) || !["color", "mark", "initial"].includes(key))
+      return;
+    if (
+      updateExtras((next) => {
+        editSeason(next).emblems[army][key] =
+          key === "initial" ? field.value.trim() : field.value;
+      })
+    ) {
+      $("draft-tools-status").textContent = "エンブレムを保存しました。";
+      paintDraft();
+    }
+  });
+  scope.listen($("prediction-seal"), "click", () => {
+    if (
+      seasonExtras().prediction ||
+      draftYear < Number(currentDay().slice(0, 4))
+    )
+      return;
+    const openOn = $("prediction-date").value;
+    if (
+      !validDateString(openOn) ||
+      openOn <= currentDay() ||
+      openOn > "2200-12-31"
+    ) {
+      $("draft-tools-status").textContent =
+        "開封日は明日以降の有効な日付を指定してください。";
+      return;
+    }
+    const prediction = {
+      central: $("prediction-central").value,
+      pacific: $("prediction-pacific").value,
+      winner: $("prediction-winner").value,
+      openOn,
+      sealedAt: new Date().toISOString(),
+      opened: false,
+      names: [...draftState.names],
+    };
+    if (
+      updateExtras((next) => {
+        editSeason(next).prediction = prediction;
+      })
+    ) {
+      $("draft-tools-status").textContent =
+        "予言封筒を封印しました。内容と開封日は変更できません。";
+      paintDraftTools();
+    }
+  });
+  scope.listen($("prediction-open"), "click", () => {
+    const prediction = seasonExtras().prediction;
+    if (!prediction || currentDay() < prediction.openOn) return;
+    if (
+      updateExtras((next) => {
+        editSeason(next).prediction.opened = true;
+      })
+    )
+      paintDraftTools();
+  });
+  function paintDraftTools() {
+    const season = seasonExtras();
+    $("draft-animation").checked = draftExtras.animation;
+    $("emblem-editors").innerHTML = season.emblems
+      .map(
+        (emblem, army) =>
+          `<div><div class="emblem-preview">${emblemHtml(emblem)}<strong>${esc(draftState.names[army])}</strong></div><label>カラー<select data-emblem-field="color" data-army="${army}">${Object.keys(
+            emblemColors,
+          )
+            .map(
+              (color) =>
+                `<option value="${color}" ${color === emblem.color ? "selected" : ""}>${themes[color] || color}</option>`,
+            )
+            .join(
+              "",
+            )}</select></label><label>マーク<select data-emblem-field="mark" data-army="${army}">${emblemMarks.map((mark) => `<option ${mark === emblem.mark ? "selected" : ""}>${mark}</option>`).join("")}</select></label><label>イニシャル（3文字まで）<input data-emblem-field="initial" data-army="${army}" maxlength="6" value="${esc(emblem.initial)}"></label></div>`,
+      )
+      .join("");
+    $("emblem-editors")
+      .querySelectorAll("select")
+      .forEach((el) => {
+        el.value =
+          season.emblems[Number(el.dataset.army)][el.dataset.emblemField];
+      });
+    $("season-save").disabled = !canSaveSeason() || !!season.result;
+    $("season-save-note").textContent = season.result
+      ? `${draftYear}年度は保存済みです。下の「保存した最終結果」から確認できます。`
+      : "全日程終了・指名ロック・両軍7部門の集計完了後に保存できます。保存後は固定され、後の指名変更やデータ更新に影響されません。";
+    const archives = Object.entries(draftExtras.seasons)
+      .filter(([, row]) => row.result)
+      .sort(([a], [b]) => Number(b) - Number(a));
+    $("season-results").innerHTML = archives.length
+      ? archives
+          .map(([year, row]) => {
+            const result = row.result;
+            return `<details class="season-record"><summary>${year}年度 · ${esc(resultSummary(result))}</summary><p class="note">保存：${esc(formatDateTime(result.savedAt))} ／ 成績取得：${esc(formatDateTime(result.generatedAt))}</p><div class="draft-table-scroll"><table><thead><tr><th>部門</th><th>${esc(result.names[0])}</th><th>${esc(result.names[1])}</th></tr></thead><tbody>${result.departments
+              .map((dept) => {
+                const cat = draftCategories.find((c) => c.id === dept.id);
+                return `<tr><th>${cat.label}</th>${dept.totals.map((total) => `<td>${draftNumber(cat, total.value)}</td>`).join("")}</tr>`;
+              })
+              .join(
+                "",
+              )}</tbody></table></div><details><summary>保存した指名と個人成績</summary>${result.departments
+              .map((dept) => {
+                const cat = draftCategories.find((c) => c.id === dept.id);
+                return `<h4>${cat.label}</h4>${dept.players.map((players, army) => `<p><b>${esc(result.names[army])}</b></p><ol>${players.map((p) => `<li>${esc(p.name)}（${esc(teams[p.team] || p.team)}） ${draftNumber(cat, p.value)}${p.status === "ok" ? "" : " · " + esc(p.status)}</li>`).join("")}</ol>`).join("")}`;
+              })
+              .join("")}</details></details>`;
+          })
+          .join("")
+      : empty("保存した最終結果はまだありません。");
+    $("share-source").innerHTML =
+      '<option value="current">表示中の年度・現在の指名</option>' +
+      archives
+        .map(
+          ([year]) =>
+            `<option value="${year}">${year}年度の保存済み最終結果</option>`,
+        )
+        .join("");
+    $("share-source").value = "current";
+    const p = season.prediction;
+    $("prediction-form").hidden =
+      !!p || draftYear < Number(currentDay().slice(0, 4));
+    $("prediction-envelope").hidden = !p;
+    $("prediction-open").hidden = !p || p.opened;
+    $("prediction-open").disabled = !p || currentDay() < p.openOn;
+    $("prediction-reveal").hidden = !p?.opened || currentDay() < p.openOn;
+    $("prediction-season-note").textContent =
+      `${draftYear}年度の予想。開幕前の作成がおすすめです。封印後は内容・日付を編集できません。端末の日時を基準に開封し、内容はJSONにも保存します。`;
+    if (!p) {
+      $("prediction-envelope-text").textContent = "";
+      $("prediction-reveal").textContent = "";
+      if (predictionFormYear !== draftYear) {
+        const target = `${Math.max(draftYear, Number(currentDay().slice(0, 4)))}-11-01`;
+        $("prediction-date").value =
+          target > currentDay() ? target : shiftDay(currentDay(), 1);
+        predictionFormYear = draftYear;
+      }
+      $("prediction-date").min = shiftDay(currentDay(), 1);
+    } else {
+      $("prediction-envelope-text").textContent =
+        `${draftYear}年度の予言 · ${p.opened && currentDay() >= p.openOn ? "開封済み" : p.openOn + "から開封できます。"}`;
+      $("prediction-reveal").textContent =
+        p.opened && currentDay() >= p.openOn
+          ? `セ・リーグ優勝予想：${teams[p.central]}\nパ・リーグ優勝予想：${teams[p.pacific]}\n両軍の勝敗予想：${p.winner === "draw" ? "引き分け" : p.names[Number(p.winner)] + "の勝利"}`
+          : "";
+    }
+    $("prediction-winner").querySelector('option[value="0"]').textContent =
+      draftState.names[0] + "の勝利";
+    $("prediction-winner").querySelector('option[value="1"]').textContent =
+      draftState.names[1] + "の勝利";
+  }
+  function drawShareImage(canvas, snapshot) {
+    canvas.width = 1800;
+    canvas.height = 1900;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw Error("このブラウザーでは画像を作成できません。");
+    const text = (value, x, y, width = 780, size = 23, color = "#292c35") => {
+      ctx.font = `${size}px sans-serif`;
+      ctx.fillStyle = color;
+      let output = String(value);
+      while (output.length > 1 && ctx.measureText(output).width > width)
+        output = output.slice(0, -1);
+      if (output !== String(value)) output += "…";
+      ctx.fillText(output, x, y);
+    };
+    ctx.fillStyle = "#f7f8fa";
+    ctx.fillRect(0, 0, 1800, 1900);
+    ctx.fillStyle = "#292c35";
+    ctx.fillRect(0, 0, 1800, 260);
+    text("HIBI SPORTS  /  SEASON DRAFT", 60, 65, 1600, 25, "#c9c1e7");
+    text(
+      `${snapshot.year}年度 指名と成績${snapshot.final ? "（最終）" : "（途中経過）"}`,
+      60,
+      130,
+      1650,
+      48,
+      "#fff",
+    );
+    text(resultSummary(snapshot), 60, 190, 1650, 29, "#fff");
+    text(
+      "成績取得：" + formatDateTime(snapshot.generatedAt) + " JST",
+      60,
+      230,
+      1650,
+      21,
+      "#cdd0d8",
+    );
+    snapshot.departments.forEach((dept, index) => {
+      const cat = draftCategories.find((c) => c.id === dept.id),
+        x = 40 + (index % 2) * 880,
+        y = 290 + Math.floor(index / 2) * 380;
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(x, y, 840, 350);
+      text(
+        cat.label + (cat.rate ? "（規定対象者の平均）" : "（合計）"),
+        x + 24,
+        y + 40,
+        790,
+        28,
+      );
+      for (let army = 0; army < 2; army++) {
+        const left = x + 24 + army * 410,
+          emblem = snapshot.emblems[army];
+        text(
+          `${emblem.mark} ${emblem.initial}  ${snapshot.names[army]}`,
+          left,
+          y + 83,
+          380,
+          24,
+          emblemColors[emblem.color],
+        );
+        dept.players[army].forEach((p, round) => {
+          text(`${round + 1}. ${p.name}`, left, y + 125 + round * 34, 235, 21);
+          text(
+            draftNumber(cat, p.value),
+            left + 250,
+            y + 125 + round * 34,
+            125,
+            22,
+          );
+        });
+        text(
+          `計 ${draftNumber(cat, dept.totals[army].value)}${cat.unit || ""}${dept.totals[army].ready ? "" : "（途中）"}`,
+          left,
+          y + 320,
+          380,
+          24,
+        );
+      }
+    });
+    text(
+      "— は未選択・未取得・規定未達など。セパ総合ではなく、この指名による独自集計。",
+      60,
+      1840,
+      1680,
+      22,
+    );
+    text(
+      "Hibi Sports · 出典：NPB公式成績 · 画像作成時点の記録",
+      60,
+      1878,
+      1680,
+      20,
+      "#888d9a",
+    );
+    return canvas;
+  }
+  function previewShare() {
+    try {
+      const selected = $("share-source").value;
+      sharedSnapshot =
+        selected === "current"
+          ? currentDraftSnapshot()
+          : draftExtras.seasons[selected]?.result;
+      if (!sharedSnapshot) throw Error("保存結果がありません。");
+      const canvas = drawShareImage(
+        document.createElement("canvas"),
+        sharedSnapshot,
+      );
+      sharedImage = canvas.toDataURL("image/png");
+      $("share-preview").src = sharedImage;
+      $("share-preview").alt =
+        `${sharedSnapshot.year}年度 ${sharedSnapshot.names.join("と")}の7部門の指名と成績`;
+      $("share-dialog-note").textContent =
+        "画像には両軍名・指名選手・成績が含まれます。画像を確認してPNGを保存してください。スマホでは画像を長押しして保存することもできます。";
+      openToolDialog("share-dialog");
+    } catch (error) {
+      $("draft-tools-status").textContent =
+        "画像を作成できませんでした。" + error.message;
+    }
+  }
+  scope.listen($("share-open"), "click", previewShare);
+  scope.listen($("share-download"), "click", () => {
+    if (!sharedImage || !sharedSnapshot) return;
+    const anchor = document.createElement("a");
+    anchor.href = sharedImage;
+    anchor.download = `hibi-note-${sharedSnapshot.year}-draft.png`;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+  });
+  const backupFormat = "japan-sports-desk-backup",
+    backupMaxBytes = 1024 * 1024;
+  let pendingBackup = null,
+    backupReadId = 0;
+  function plainRecord(value) {
+    return value !== null && typeof value === "object" && !Array.isArray(value);
+  }
+  function backupKeys(value, allowed) {
+    if (
+      !plainRecord(value) ||
+      Object.keys(value).some((key) => !allowed.includes(key))
+    )
+      throw Error("対応していない項目が含まれています。");
+  }
+  function validateDraftBackup(value, year, { allowConflicts = false } = {}) {
+    backupKeys(value, ["names", "picks", "locked"]);
+    if (value.locked !== undefined && typeof value.locked !== "boolean")
+      throw Error("ロック状態の形式が正しくありません。");
+    if (
+      !Array.isArray(value.names) ||
+      value.names.length !== 2 ||
+      value.names.some(
+        (name) =>
+          typeof name !== "string" ||
+          !name.trim() ||
+          name.length > 24 ||
+          /[\u0000-\u001f]/.test(name),
+      )
+    )
+      throw Error("軍名の形式が正しくありません。");
+    backupKeys(
+      value.picks,
+      draftCategories.map((cat) => cat.id),
+    );
+    const picks = {},
+      seasonUsed = new Set();
+    for (const cat of draftCategories) {
+      const armies = value.picks[cat.id];
+      if (
+        !Array.isArray(armies) ||
+        armies.length !== 2 ||
+        armies.some((slots) => !Array.isArray(slots) || slots.length !== 5)
+      )
+        throw Error("指名枠は各部門・各軍5人にしてください。");
+      const used = Number(year) >= 2027 ? seasonUsed : new Set();
+      picks[cat.id] = armies.map((slots) =>
+        slots.map((pick) => {
+          if (pick === null) return null;
+          backupKeys(pick, ["team", "name"]);
+          if (
+            !validDraftTeam(pick.team, pick.name, cat.id, year) ||
+            typeof pick.name !== "string" ||
+            pick.name.length > 80 ||
+            /[\u0000-\u001f]/.test(pick.name)
+          )
+            throw Error("球団・選手の形式が正しくありません。");
+          const key = draftPickKey(pick, year);
+          if (pick.name && used.has(key) && !allowConflicts)
+            throw Error(
+              Number(year) >= 2027
+                ? "2027年度以降は両軍・全部門を通して重複指名できません。"
+                : "同じ部門に重複指名があります。",
+            );
+          if (pick.name) used.add(key);
+          return { team: pick.team, name: pick.name };
+        }),
+      );
+    }
+    return {
+      names: value.names.map((name) => name.trim()),
+      locked: value.locked === true,
+      picks,
+    };
+  }
+  function validateBackup(value, { allowConflicts = false } = {}) {
+    backupKeys(value, [
+      "format",
+      "version",
+      "exportedAt",
+      "preferences",
+      "menuCollapsed",
+      "drafts",
+      "savedNews",
+      "extras",
+      "experience",
+    ]);
+    if (value.format !== backupFormat || value.version !== 1)
+      throw Error("Hibi Sportsの対応したJSONファイルを選んでください。");
+    if (
+      typeof value.exportedAt !== "string" ||
+      value.exportedAt.length > 40 ||
+      !Number.isFinite(Date.parse(value.exportedAt))
+    )
+      throw Error("保存日時の形式が正しくありません。");
+    const prefs = value.preferences;
+    backupKeys(prefs, [
+      "theme",
+      "favorite",
+      "fontSize",
+      "region",
+      "homeLayout",
+    ]);
+    if (prefs.homeLayout !== undefined && !validHomeLayout(prefs.homeLayout))
+      throw Error("ホームの表示設定が正しくありません。");
+    if (
+      !Object.hasOwn(themes, prefs.theme) ||
+      !(prefs.favorite === "all" || Object.hasOwn(teams, prefs.favorite)) ||
+      (prefs.fontSize !== undefined &&
+        !["small", "standard", "large"].includes(prefs.fontSize)) ||
+      (prefs.region !== undefined &&
+        !Object.hasOwn(regionNames, prefs.region)) ||
+      typeof value.menuCollapsed !== "boolean"
+    )
+      throw Error("設定の形式が正しくありません。");
+    if (!plainRecord(value.drafts) || Object.keys(value.drafts).length > 50)
+      throw Error("年度データの形式・件数が正しくありません。");
+    const drafts = {};
+    for (const [year, draft] of Object.entries(value.drafts)) {
+      if (!/^\d{4}$/.test(year) || Number(year) < 1900 || Number(year) > 2200)
+        throw Error("年度の形式が正しくありません。");
+      drafts[year] = validateDraftBackup(draft, Number(year), {
+        allowConflicts,
+      });
+    }
+    return {
+      format: backupFormat,
+      version: 1,
+      exportedAt: value.exportedAt,
+      preferences: {
+        theme: prefs.theme,
+        favorite: prefs.favorite,
+        region: prefs.region || "13",
+        homeLayout: prefs.homeLayout
+          ? normalizeHomeLayout(prefs.homeLayout)
+          : defaultHomeLayout(),
+      },
+      menuCollapsed: value.menuCollapsed,
+      savedNews: validateSavedNews(
+        value.savedNews === undefined ? [] : value.savedNews,
+      ),
+      drafts,
+      ...(value.extras === undefined
+        ? {}
+        : { extras: validateExtras(value.extras) }),
+      ...(value.experience === undefined
+        ? {}
+        : { experience: validateExperience(value.experience) }),
+    };
+  }
+  function collectBackup() {
+    const drafts = {};
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const key = window.localStorage.key(i),
+        match = key?.match(/^sports-desk-draft-v1-(\d{4})$/);
+      if (match)
+        drafts[match[1]] = validateDraftBackup(
+          JSON.parse(window.localStorage.getItem(key)),
+          Number(match[1]),
+          { allowConflicts: true },
+        );
+    }
+    if (draftYear !== null && draftState)
+      drafts[String(draftYear)] = validateDraftBackup(draftState, draftYear, {
+        allowConflicts: true,
+      });
+    return validateBackup(
+      {
+        format: backupFormat,
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        preferences: { ...preferences },
+        menuCollapsed,
+        savedNews,
+        drafts,
+        extras: draftExtras,
+        experience,
+      },
+      { allowConflicts: true },
+    );
+  }
+  scope.listen($("backup-export"), "click", () => {
+    let url;
+    try {
+      const backup = collectBackup(),
+        body = JSON.stringify(backup, null, 2);
+      if (new Blob([body]).size > backupMaxBytes)
+        throw Error("保存データが1MBを超えています。");
+      url = URL.createObjectURL(new Blob([body], { type: "application/json" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `hibi-note-backup-${currentDay()}.json`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      $("backup-status").textContent = Object.entries(backup.drafts).some(
+        ([year, state]) =>
+          Number(year) >= 2027 && draftDuplicateNames(state, year).length,
+      )
+        ? "JSONファイルを保存しました。2027年度以降の重複指名が含まれます。別ブラウザーへ読み込む前に指名を修正して再保存してください。"
+        : "JSONファイルを保存しました。別ブラウザーの設定から読み込めます。";
+    } catch (error) {
+      $("backup-status").textContent =
+        "JSONを保存できませんでした。" + error.message;
+    } finally {
+      if (url) scope.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+  });
+  function cancelBackup() {
+    backupReadId++;
+    pendingBackup = null;
+    $("backup-preview").hidden = true;
+    $("backup-file").value = "";
+    $("backup-preview-text").textContent = "";
+  }
+  scope.listen($("backup-cancel"), "click", () => {
+    cancelBackup();
+    $("backup-status").textContent =
+      "読み込みをキャンセルしました。現在のデータは変更していません。";
+  });
+  scope.listen($("backup-file"), "change", async () => {
+    const file = $("backup-file").files?.[0];
+    cancelBackup();
+    if (!file) return;
+    const readId = backupReadId;
+    $("backup-status").textContent = "JSONファイルを確認しています…";
+    try {
+      if (file.size > backupMaxBytes)
+        throw Error("1MB以下のファイルを選んでください。");
+      const text = await file.text();
+      if (readId !== backupReadId) return;
+      if (text.length > backupMaxBytes)
+        throw Error("1MB以下のファイルを選んでください。");
+      const backup = validateBackup(JSON.parse(text.replace(/^\uFEFF/, "")));
+      pendingBackup = backup;
+      const lines = Object.entries(backup.drafts)
+        .sort(([a], [b]) => b.localeCompare(a))
+        .map(
+          ([year, draft]) =>
+            `${year}年：${draft.names.join(" ／ ")} · ${
+              Object.values(draft.picks)
+                .flat(2)
+                .filter((p) => p?.name).length
+            }枠を指名`,
+        );
+      $("backup-preview-text").textContent =
+        `保存日時：${formatDateTime(backup.exportedAt)}（日本時間）\nテーマ：${themes[backup.preferences.theme]} ／ 応援球団：${teams[backup.preferences.favorite] || "未設定"} ／ 表示地域：${regionNames[backup.preferences.region]}\n${lines.length ? lines.join("\n") : "野球集計の年度データなし"}\nホーム表示と、上記年度の軍名・指名・ロック状態を上書きします。含まれない年度は残ります。`;
+      $("backup-preview-text").textContent += backup.extras
+        ? "\n追加データ（エンブレム・最終結果・予言封筒・指名演出）も読み込みます。含まれる年度の追加データは上書きされます。"
+        : "\n追加データは現在の保存を維持します。";
+      $("backup-preview").hidden = false;
+      $("backup-status").textContent =
+        "内容を確認して「この内容を読み込む」を押してください。まだ反映していません。";
+      if (backup.experience)
+        $("backup-preview-text").textContent +=
+          "\n明暗・背景・集中表示・用途別設定・先発11人も上書きします。";
+    } catch (error) {
+      if (readId === backupReadId) {
+        pendingBackup = null;
+        $("backup-preview").hidden = true;
+        $("backup-status").textContent =
+          "JSONを読み込めませんでした。" +
+          (error instanceof SyntaxError
+            ? "JSONの形式が正しくありません。"
+            : error.message);
+      }
+    }
+  });
+  function applyBackup(backup) {
+    const mergedExtras = backup.extras
+      ? validateExtras({
+          version: 1,
+          animation: backup.extras.animation,
+          seasons: { ...draftExtras.seasons, ...backup.extras.seasons },
+        })
+      : draftExtras;
+    const updates = [
+      [settingsKey, JSON.stringify(backup.preferences)],
+      [menuKey, String(backup.menuCollapsed)],
+      ...Object.entries(backup.drafts).map(([year, draft]) => [
+        "sports-desk-draft-v1-" + year,
+        JSON.stringify(draft),
+      ]),
+    ];
+    if (backup.extras) updates.push([extrasKey, JSON.stringify(mergedExtras)]);
+    if (backup.experience)
+      updates.push([experienceKey, JSON.stringify(backup.experience)]);
+    const previous = updates.map(([key]) => [
+        key,
+        window.localStorage.getItem(key),
+      ]),
+      written = [];
+    try {
+      for (const [key, value] of updates) {
+        window.localStorage.setItem(key, value);
+        written.push(key);
+      }
+    } catch (error) {
+      let restored = true;
+      for (const [key, value] of previous.filter(([key]) =>
+        written.includes(key),
+      )) {
+        try {
+          if (value === null) window.localStorage.removeItem(key);
+          else window.localStorage.setItem(key, value);
+        } catch {
+          restored = false;
+        }
+      }
+      throw Error(
+        restored
+          ? "ブラウザーへ保存できませんでした。現在のデータは変更していません。"
+          : "保存と元データの復元に失敗しました。JSONを保管し、ブラウザーの保存設定を確認してください。",
+      );
+    }
+    if (backup.experience) experience = backup.experience;
+    applyExperience();
+    paintLineup();
+    draftExtras = mergedExtras;
+    preferences = { ...backup.preferences };
+    applyHomeLayout();
+    menuCollapsed = backup.menuCollapsed;
+    $("favorite-team").value = preferences.favorite;
+    applyTheme();
+    syncRegion();
+    applyMenu();
+    applyFavorite();
+    paintDaily();
+    draftYear = null;
+    draftSearches.clear();
+    if (data) paintDraft();
+  }
+  scope.listen($("backup-apply"), "click", () => {
+    if (!pendingBackup) return;
+    try {
+      applyBackup(pendingBackup);
+      cancelBackup();
+      $("backup-status").textContent =
+        "JSONを読み込み、設定・指名・ロック状態を反映しました。成績は公開データで自動集計します。";
+      $("settings-status").textContent =
+        "読み込んだ設定をこのブラウザーに保存しました。";
+    } catch (error) {
+      $("backup-status").textContent =
+        "読み込みに失敗しました。" + error.message;
+    }
+  });
+  // Everyday tools and football views. All personal state stays in this browser.
+  const experienceKey = "hibi-note-experience-v1";
+  const experienceDefaults = () => ({
+    version: 1,
+    mode: "auto",
+    background: "plain",
+    motion: false,
+    focus: false,
+    preset: "morning",
+    presets: {},
+    lineup: { formation: "4-3-3", players: Array(11).fill("") },
+  });
+  function validateExperience(value) {
+    backupKeys(value, [
+      "version",
+      "mode",
+      "background",
+      "motion",
+      "focus",
+      "preset",
+      "presets",
+      "lineup",
+    ]);
+    if (
+      value.version !== 1 ||
+      !["auto", "light", "dark"].includes(value.mode) ||
+      !["plain", "stars", "rain", "paper"].includes(value.background) ||
+      typeof value.motion !== "boolean" ||
+      typeof value.focus !== "boolean" ||
+      !["morning", "holiday", "sports"].includes(value.preset)
+    )
+      throw Error("表示設定の形式が正しくありません。");
+    backupKeys(value.presets, ["morning", "holiday", "sports"]);
+    for (const rows of Object.values(value.presets))
+      if (!validHomeLayout(rows))
+        throw Error("用途別の表示設定が正しくありません。");
+    backupKeys(value.lineup, ["formation", "players"]);
+    if (
+      !["4-3-3", "4-2-3-1", "3-4-2-1"].includes(value.lineup.formation) ||
+      !Array.isArray(value.lineup.players) ||
+      value.lineup.players.length !== 11 ||
+      value.lineup.players.some(
+        (p) =>
+          typeof p !== "string" ||
+          p.length > 80 ||
+          (p && !/^[a-z0-9_]+$/.test(p)),
+      ) ||
+      new Set(value.lineup.players.filter(Boolean)).size !==
+        value.lineup.players.filter(Boolean).length
+    )
+      throw Error("先発11人の形式が正しくありません。");
+    const normalized = JSON.parse(JSON.stringify(value));
+    for (const id of Object.keys(normalized.presets))
+      normalized.presets[id] = normalizeHomeLayout(normalized.presets[id]);
+    return normalized;
+  }
+  let experience = experienceDefaults();
+  try {
+    const raw = window.localStorage.getItem(experienceKey);
+    if (raw) experience = validateExperience(JSON.parse(raw));
+  } catch {}
+  function saveExperience(next) {
+    try {
+      const valid = validateExperience(next);
+      window.localStorage.setItem(experienceKey, JSON.stringify(valid));
+      experience = valid;
+      applyExperience();
+      paintBackupReminder();
+      return true;
+    } catch {
+      $("settings-status").textContent =
+        "保存できませんでした。ブラウザーの保存設定をご確認ください。";
+      return false;
+    }
+  }
+  const darkPreference = window.matchMedia?.("(prefers-color-scheme: dark)");
+  function applyExperience() {
+    document.documentElement.dataset.dark = String(
+      experience.mode === "dark" ||
+        (experience.mode === "auto" && !!darkPreference?.matches),
+    );
+    document.documentElement.dataset.background = experience.background;
+    document.documentElement.dataset.motion = String(experience.motion);
+    document.documentElement.dataset.focus = String(experience.focus);
+    applyTheme();
+    $("focus-toggle").textContent =
+      "集中表示：" + (experience.focus ? "オン" : "オフ");
+    $("focus-toggle").setAttribute("aria-pressed", String(experience.focus));
+    $("appearance-mode").value = experience.mode;
+    $("appearance-background").value = experience.background;
+    $("appearance-motion").checked = experience.motion;
+    document.querySelectorAll("[data-home-preset]").forEach((b) => {
+      b.classList.toggle(
+        "selected",
+        b.dataset.homePreset === experience.preset,
+      );
+      b.setAttribute(
+        "aria-pressed",
+        String(b.dataset.homePreset === experience.preset),
+      );
+    });
+    document
+      .querySelectorAll(
+        ".rivals-card,.roadmap,.titles-card,.standings-card,.draft-editor",
+      )
+      .forEach((card) => {
+        card.classList.add("focus-extra");
+        if (!card.querySelector(".focus-reveal")) {
+          const button = document.createElement("button");
+          button.className = "secondary-button focus-reveal";
+          button.textContent = "詳しく見る";
+          button.setAttribute("aria-expanded", "false");
+          scope.listen(button, "click", () => {
+            const open = !card.classList.contains("focus-expanded");
+            card.classList.toggle("focus-expanded", open);
+            button.textContent = open ? "詳細を閉じる" : "詳しく見る";
+            button.setAttribute("aria-expanded", String(open));
+          });
+          card.prepend(button);
+        }
+      });
+  }
+  scope.listen(darkPreference, "change", applyExperience);
+  scope.listen($("focus-toggle"), "click", () =>
+    saveExperience({ ...experience, focus: !experience.focus }),
+  );
+  for (const [id, prop] of [
+    ["appearance-mode", "mode"],
+    ["appearance-background", "background"],
+    ["appearance-motion", "motion"],
+  ])
+    scope.listen($(id), "change", () =>
+      saveExperience({
+        ...experience,
+        [prop]: prop === "motion" ? $(id).checked : $(id).value,
+      }),
+    );
+  const releaseVersion = "2026-10-football-tools";
+  try {
+    $("release-note").hidden =
+      window.localStorage.getItem("hibi-note-release-seen") === releaseVersion;
+  } catch {
+    $("release-note").hidden = false;
+  }
+  scope.listen($("release-dismiss"), "click", () => {
+    try {
+      window.localStorage.setItem("hibi-note-release-seen", releaseVersion);
+      $("release-note").hidden = true;
+    } catch {
+      $("release-note").hidden = true;
+    }
+  });
+  function backupFingerprint() {
+    try {
+      const state = collectBackup();
+      delete state.exportedAt;
+      return smallHash(JSON.stringify(state));
+    } catch {
+      return "";
+    }
+  }
+  function paintBackupReminder() {
+    if (!$("backup-reminder")) return;
+    let record;
+    try {
+      record = JSON.parse(
+        window.localStorage.getItem("hibi-note-backup-saved") || "null",
+      );
+    } catch {}
+    const fingerprint = backupFingerprint();
+    $("backup-reminder").textContent = !record
+      ? "まだJSONの保存記録がありません。設定や指名を変更したら保存しておくと引き継げます。"
+      : record.hash !== fingerprint
+        ? "前回のJSON保存後に変更があります。引き継ぐ前にもう一度保存してください。"
+        : "前回のJSON書き出し：" +
+          formatDateTime(record.at) +
+          "（ファイルの保管もご確認ください）";
+  }
+  scope.listen($("backup-export"), "click", () => {
+    if (
+      !$("backup-status").textContent.startsWith("JSONファイルを保存しました")
+    )
+      return;
+    try {
+      window.localStorage.setItem(
+        "hibi-note-backup-saved",
+        JSON.stringify({
+          at: new Date().toISOString(),
+          hash: backupFingerprint(),
+        }),
+      );
+    } catch {}
+    paintBackupReminder();
+  });
+  scope.listen(document, "change", () =>
+    scope.setTimeout(paintBackupReminder, 0),
+  );
+  scope.listen($("tab-settings"), "click", paintBackupReminder);
+  scope.listen($("settings-reset"), "click", () => {
+    saveExperience({ ...experienceDefaults(), lineup: experience.lineup });
+    paintLineup();
+  });
+  function smallHash(value) {
+    let n = 2166136261;
+    for (let i = 0; i < value.length; i++) {
+      n ^= value.charCodeAt(i);
+      n = Math.imul(n, 16777619);
+    }
+    return (n >>> 0).toString(36);
+  }
+  const seenKey = "hibi-note-seen-content-v1";
+  let previousSeen = {};
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(seenKey) || "{}");
+    if (plainRecord(saved) && Object.keys(saved).length <= 10000)
+      previousSeen = saved;
+  } catch {}
+  let newContent = new Set(),
+    contentRecords = [];
+  function currentContent() {
+    const records = [];
+    const add = (key, title, tab, value) =>
+      records.push({ key, title, tab, hash: smallHash(JSON.stringify(value)) });
+    for (const [id, label, source] of newsSources())
+      if (source?.ok)
+        for (const n of (Array.isArray(source.data)
+          ? source.data
+          : source.data.items || []
+        ).slice(0, 3))
+          add("news:" + n.url, label + "：" + n.title, "home", [
+            n.title,
+            n.date,
+          ]);
+    for (const [sport, source] of [
+      ["baseball", data.baseballResults],
+      ["football", data.footballHistory],
+    ])
+      if (source?.ok)
+        for (const g of source.data.slice(0, 1000))
+          add(
+            "game:" +
+              sport +
+              ":" +
+              g.date +
+              ":" +
+              (g.home || "日本") +
+              ":" +
+              (g.away || g.opponent),
+            g.date +
+              " " +
+              (sport === "baseball"
+                ? g.home + " × " + g.away
+                : "日本 × " + g.opponent),
+            sport,
+            [
+              g.status,
+              g.homeScore,
+              g.awayScore,
+              g.japanScore,
+              g.opponentScore,
+              g.score,
+            ],
+          );
+    if (data.standings?.ok)
+      for (const league of ["c", "p"])
+        for (const [i, r] of (data.standings.data[league] || []).entries())
+          add("standing:" + r.team, r.team + "の順位・成績", "baseball", [
+            i,
+            r.games,
+            r.wins,
+            r.losses,
+            r.draws,
+            r.pct,
+            r.gap,
+          ]);
+    if (data.fifa?.ok)
+      for (const r of data.fifa.data.rows)
+        add("fifa:" + r.code, name(r) + "のFIFAランキング", "football", [
+          r.rank,
+          r.points,
+        ]);
+    return [...new Map(records.map((r) => [r.key, r])).values()];
+  }
+  function paintChanges() {
+    contentRecords = currentContent();
+    newContent = new Set(
+      contentRecords
+        .filter(
+          (r) =>
+            Object.keys(previousSeen).length && previousSeen[r.key] !== r.hash,
+        )
+        .map((r) => r.key),
+    );
+    $("updates-count").textContent = newContent.size + "件";
+    $("updates-list").innerHTML = newContent.size
+      ? contentRecords
+          .filter((r) => newContent.has(r.key))
+          .slice(0, 40)
+          .map(
+            (r) =>
+              `<p><span class="new-badge">NEW</span> <button class="player-link" data-search-tab="${r.tab}">${esc(r.title)}</button></p>`,
+          )
+          .join("")
+      : Object.keys(previousSeen).length
+        ? '<p class="note">前回確認からの変更はありません。</p>'
+        : '<p class="note">初回の内容を記録しました。次回から変更点を表示します。</p>';
+    document
+      .querySelectorAll(".new-badge[data-auto-new]")
+      .forEach((el) => el.remove());
+    document.querySelectorAll(".news-item").forEach((a) => {
+      if (newContent.has("news:" + a.getAttribute("href"))) {
+        const b = document.createElement("small");
+        b.className = "new-badge";
+        b.dataset.autoNew = "true";
+        b.textContent = "NEW";
+        a.querySelector("span")?.prepend(b);
+      }
+    });
+    document.querySelectorAll("#standings tbody tr").forEach((row) => {
+      const team = row.querySelector(".team-cell");
+      if (team && newContent.has("standing:" + team.textContent.trim())) {
+        const b = document.createElement("small");
+        b.className = "new-badge";
+        b.dataset.autoNew = "true";
+        b.textContent = "NEW";
+        team.append(b);
+      }
+    });
+    document.querySelectorAll("[data-result-key]").forEach((el) => {
+      if (newContent.has(el.dataset.resultKey)) {
+        const badge = document.createElement("small");
+        badge.className = "new-badge";
+        badge.dataset.autoNew = "true";
+        badge.textContent = "NEW";
+        (
+          el.querySelector(".result-outcome") ||
+          el.querySelector("b") ||
+          el
+        ).append(badge);
+      }
+    });
+    if (newContent.has("fifa:JPN")) {
+      const badge = document.createElement("small");
+      badge.className = "new-badge";
+      badge.dataset.autoNew = "true";
+      badge.textContent = "NEW";
+      $("fifa-summary").append(badge);
+    }
+    // Save current observation for the next visit; keep this visit's comparison stable.
+    try {
+      window.localStorage.setItem(
+        seenKey,
+        JSON.stringify(
+          Object.fromEntries(contentRecords.map((r) => [r.key, r.hash])),
+        ),
+      );
+    } catch {}
+  }
+  scope.listen($("updates-read"), "click", () => {
+    previousSeen = Object.fromEntries(
+      currentContent().map((r) => [r.key, r.hash]),
+    );
+    paintChanges();
+  });
+  function soccerPlayers() {
+    return data?.footballSquad?.ok ? data.footballSquad.data.players : [];
+  }
+  function soccerPlayerButton(p) {
+    return `<button class="player-link" data-soccer-player="${esc(p.id)}">${esc(p.name)}</button>`;
+  }
+  function soccerInfoGrid(rows) {
+    return `<dl class="soccer-profile profile-grid">${rows.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value ?? "未取得")}</dd></div>`).join("")}</dl>`;
+  }
+  function soccerSourceLink(url, label) {
+    try {
+      const u = new URL(url);
+      if (
+        u.protocol !== "https:" ||
+        u.username ||
+        u.password ||
+        !["www.jfa.jp", "op.jfa.jp", "www.espn.com"].includes(u.hostname)
+      )
+        return "";
+      return `<a href="${esc(u.href)}" target="_blank" rel="noopener noreferrer">${esc(label)} ↗</a>`;
+    } catch {
+      return "";
+    }
+  }
+  function playerAge(birthDate) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate || "")) return null;
+    const today = currentDay(),
+      years =
+        Number(today.slice(0, 4)) -
+        Number(birthDate.slice(0, 4)) -
+        (today.slice(5) < birthDate.slice(5) ? 1 : 0);
+    return years >= 0 && years < 100 ? years : null;
+  }
+  function showSoccerPlayer(id) {
+    const p = soccerPlayers().find((p) => p.id === id);
+    if (!p) return;
+    $("soccer-player-title").textContent = p.name;
+    const profile = p.profile || {},
+      squad = data.footballSquad.data,
+      age = playerAge(profile.birthDate),
+      clubName = (p.club || "").split("／")[0],
+      country =
+        (p.club || "").split("／")[1] ||
+        (p.club ? "日本（国内所属）" : "未取得");
+    const basic = [
+      ["ポジション", p.position],
+      [
+        "生年月日",
+        profile.birthDate
+          ? profile.birthDate + (age !== null ? "（" + age + "歳）" : "")
+          : "未取得",
+      ],
+      ["出身地", profile.birthplace || "未取得"],
+      [
+        "身長 / 体重",
+        profile.heightCm != null || profile.weightKg != null
+          ? `${profile.heightCm ?? "—"}cm / ${profile.weightKg ?? "—"}kg`
+          : "未取得",
+      ],
+    ];
+    const previous = squad.previous?.players,
+      selection = previous
+        ? previous.some((v) => v.id === p.id)
+          ? "前回の掲載名簿にも掲載"
+          : "今回の掲載名簿に追加（初招集とは限りません）"
+        : "前回の名簿は未取得";
+    const representative = [
+      ["代表出場数", p.caps == null ? "未取得" : p.caps + "試合"],
+      [
+        p.position === "GK" ? "代表失点数（GK）" : "代表得点数",
+        p.position === "GK"
+          ? p.conceded == null
+            ? "未取得"
+            : p.conceded + "失点"
+          : p.goals == null
+            ? "未取得"
+            : p.goals + "得点",
+      ],
+      ["日本代表デビュー", profile.debut || "未取得"],
+      ["掲載招集メンバーの発表日", formatDate(squad.date) || "未取得"],
+      ["前回からの掲載状況", selection],
+    ];
+    const clubData = data.overseas?.ok ? data.overseas.data : null,
+      club = (clubData?.clubs || clubData?.players || []).find(
+        (v) => v.id === p.id,
+      ),
+      games = club?.games || [];
+    const leagueNames = {
+      "eng.1": "プレミアリーグ",
+      "eng.2": "EFLチャンピオンシップ",
+      "ger.1": "ブンデスリーガ",
+      "ger.2": "ブンデスリーガ2部",
+      "esp.1": "ラ・リーガ",
+      "fra.1": "リーグ・アン",
+      "ita.1": "セリエA",
+      "ned.1": "エールディヴィジ",
+      "bel.1": "ベルギー1部",
+      "por.1": "ポルトガル1部",
+      "sco.1": "スコットランド1部",
+      "den.1": "デンマーク1部",
+      "jpn.1": "J1リーグ",
+    };
+    const leagues = [
+      ...new Set(games.map((g) => leagueNames[g.league]).filter(Boolean)),
+    ];
+    const fixtures = games.length
+      ? `<ul class="profile-club-games">${games
+          .slice(0, 4)
+          .map((g) => {
+            const score =
+              g.status === "finished" &&
+              Number.isInteger(g.home.score) &&
+              Number.isInteger(g.away.score)
+                ? `${g.home.score} − ${g.away.score} · 終了`
+                : g.status === "finished"
+                  ? "終了 · スコア未取得"
+                  : g.status === "inprogress"
+                    ? "試合中（取得時点）"
+                    : "予定";
+            return `<li><small>${esc(formatDate(g.date))}${g.kickoff ? " · " + esc(new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit" }).format(new Date(g.kickoff))) : ""}（日本時間）</small><strong>${esc(g.home.name)} × ${esc(g.away.name)}</strong><span>${esc(score)}</span>${soccerSourceLink(g.url, "試合情報")}</li>`;
+          })
+          .join("")}</ul>`
+      : `<p class="note">${!clubData ? "クラブの日程を取得できませんでした。" : !club?.matched ? "このクラブは日程データと照合できていません。" : "取得範囲内に今週の掲載試合はありません（未収録・取得失敗を含みます）。"}</p>`;
+    const career = Array.isArray(profile.career) ? profile.career : [];
+    $("soccer-player-body").innerHTML =
+      `${profile.englishName ? `<p class="profile-english">${esc(profile.englishName)}</p>` : ""}<section class="profile-section"><h3>基本プロフィール</h3>${soccerInfoGrid(basic)}</section><section class="profile-section"><h3>日本代表での情報</h3>${soccerInfoGrid(representative)}<p class="note">代表成績・プロフィール：${esc(p.asOf || profile.asOf || "基準日未取得")}時点。GKの失点数は得点数とは異なります。</p></section><section class="profile-section"><h3>所属クラブの情報</h3>${soccerInfoGrid(
+        [
+          ["所属クラブ", clubName || "未取得"],
+          ["国・地域", country],
+          [
+            "今週の掲載リーグ",
+            leagues.join("・") || "未取得（掲載試合なしを含む）",
+          ],
+        ],
+      )}<p class="note">所属：${esc(formatDate(squad.date || "日付未取得"))}のJFA掲載名簿を基準にしています。</p><h4>今週のクラブ日程・結果</h4>${clubData ? `<p class="note">${esc(formatDate(clubData.from))} 〜 ${esc(formatDate(clubData.to))} · J1・欧州主要12リーグの取得範囲内</p>` : ""}${fixtures}<p class="note">クラブ全体の日程・結果です。選手本人の出場・得点は含みません。カップ戦・一部リーグは対象外です。</p><details class="profile-career"><summary>これまでの所属チーム歴</summary>${career.length ? `<ol>${career.map((team) => `<li>${esc(team)}</li>`).join("")}</ol>` : '<p class="note">所属チーム歴は未取得です。</p>'}<p class="note">公式プログラム掲載時点の履歴です。</p></details></section><div class="profile-sources">${soccerSourceLink(p.url, "JFA選手紹介")}${soccerSourceLink(squad.statsSource, "プロフィール・代表成績の出典")}<p class="note">取得：${esc(stamp(data.footballSquad))}</p></div>`;
+    openToolDialog("soccer-player-dialog");
+  }
+  scope.listen($("soccer-player-close"), "click", () =>
+    closeToolDialog("soccer-player-dialog"),
+  );
+  scope.listen($("soccer-player-dialog"), "cancel", (event) => {
+    event.preventDefault();
+    closeToolDialog("soccer-player-dialog");
+  });
+  scope.listen(document, "click", (event) => {
+    const soccer = event.target.closest("[data-soccer-player]");
+    if (soccer) showSoccerPlayer(soccer.dataset.soccerPlayer);
+    const tab = event.target.closest("[data-search-tab]");
+    if (tab) {
+      navigatePanel(tab.dataset.searchTab);
+      if (tab.dataset.searchTarget) {
+        const target = $(tab.dataset.searchTarget);
+        if (target) {
+          for (let p = target; p; p = p.parentElement)
+            if (p.tagName === "DETAILS") p.open = true;
+          target.scrollIntoView?.({ block: "center" });
+        }
+      }
+    }
+  });
+  function paintSoccerResults() {
+    const games = completedFootball(),
+      limit = Number($("football-result-limit").value) || 5;
+    $("football-results-list").innerHTML = games.length
+      ? games
+          .slice(0, limit)
+          .map(
+            (g) =>
+              `<div class="football-result-row outcome-${["win", "draw", "loss"].includes(g.result) ? g.result : validScore(g.japanScore, g.opponentScore) ? (g.japanScore > g.opponentScore ? "win" : g.japanScore < g.opponentScore ? "loss" : "draw") : "unknown"}"><span>${esc(formatDate(g.date))}</span><b>${esc(footballOutcome(g))}</b><span>日本 ${validScore(g.japanScore, g.opponentScore) ? g.japanScore + " − " + g.opponentScore : "未取得"} ${esc(g.opponent)}</span>${newContent.has("game:football:" + g.date + ":日本:" + g.opponent) ? '<small class="new-badge">NEW</small>' : ""}</div>`,
+          )
+          .join("")
+      : empty("取得範囲内に結果がありません。");
+    const opponents = new Map();
+    for (const g of games) {
+      if (!validScore(g.japanScore, g.opponentScore)) continue;
+      const row = opponents.get(g.opponent) || {
+        opponent: g.opponent,
+        w: 0,
+        d: 0,
+        l: 0,
+        goals: 0,
+        against: 0,
+      };
+      row[
+        g.japanScore > g.opponentScore
+          ? "w"
+          : g.japanScore < g.opponentScore
+            ? "l"
+            : "d"
+      ]++;
+      row.goals += g.japanScore;
+      row.against += g.opponentScore;
+      opponents.set(g.opponent, row);
+    }
+    $("head-to-head-coverage").textContent = games.length
+      ? `取得範囲：${formatDate(games.at(-1).date)}〜${formatDate(games[0].date)}（直近約3年の掲載分）。通算全期間ではありません。PK戦は試合スコアの引き分けとして集計。`
+      : "比較できる結果がありません。";
+    $("head-to-head").innerHTML = opponents.size
+      ? `<table><thead><tr><th>相手</th><th>勝</th><th>分</th><th>敗</th><th>得点</th><th>失点</th></tr></thead><tbody>${[
+          ...opponents.values(),
+        ]
+          .sort((a, b) => b.w + b.d + b.l - a.w - a.d - a.l)
+          .map(
+            (r) =>
+              `<tr><th>${esc(r.opponent)}</th><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.goals}</td><td>${r.against}</td></tr>`,
+          )
+          .join("")}</tbody></table>`
+      : empty();
+  }
+  scope.listen($("football-result-limit"), "change", paintSoccerResults);
+  function paintCountdown() {
+    const game = nextFootballGame();
+    if (!game) {
+      $("kickoff-countdown").textContent = "次の代表戦の発表を待っています。";
+      return;
+    }
+    const countdown = matchCountdown(game);
+    const label =
+      countdown.status === "upcoming"
+        ? `キックオフまで あと${countdown.days ? countdown.days + "日" : ""}${countdown.hours}時間${countdown.minutes}分`
+        : countdown.status === "started"
+          ? "キックオフ予定時刻を過ぎました。結果の更新を確認してください。"
+          : "キックオフ時刻は未発表です。";
+    $("kickoff-countdown").textContent =
+      `⚽ ${label} · 日本 × ${game.opponent} · ${formatDate(game.date)}${countdown.status !== "unknown" ? " " + game.time : ""}（日本時間）`;
+  }
+  scope.setInterval(() => {
+    if (data && !document.hidden) paintCountdown();
+  }, 60000);
+  function paintSquad() {
+    const source = data.footballSquad;
+    if (!source?.ok) {
+      $("squad-list").innerHTML = empty("代表メンバーを取得できませんでした。");
+      $("squad-source").textContent = stamp(source);
+      $("squad-count").textContent = "";
+      $("squad-changes").textContent = "変更情報を取得できませんでした。";
+      return;
+    }
+    const roster = source.data;
+    const prior = roster.previous;
+    const added = prior
+      ? roster.players.filter(
+          (p) => !prior.players.some((old) => old.id === p.id),
+        )
+      : [];
+    const removed = prior
+      ? prior.players.filter(
+          (p) => !roster.players.some((now) => now.id === p.id),
+        )
+      : [];
+    const addedIds = new Set(added.map((p) => p.id));
+    $("squad-count").textContent = `${roster.players.length}人`;
+    $("squad-source").innerHTML =
+      `${esc(formatDate(roster.date))}の掲載招集メンバー · ${esc(stamp(source))} · <a href="${esc(roster.url)}" target="_blank" rel="noopener noreferrer">JFA出典 ↗</a>`;
+    const groups = new Map();
+    for (const p of roster.players) {
+      const position = p.position || "その他";
+      if (!groups.has(position)) groups.set(position, []);
+      groups.get(position).push(p);
+    }
+    $("squad-list").innerHTML = [...groups]
+      .map(
+        ([position, players]) =>
+          `<section class="squad-position"><h4>${esc(position)}<span>${players.length}人</span></h4><div class="squad-list">${players
+            .map(
+              (p) =>
+                `<div class="squad-player${addedIds.has(p.id) ? " squad-player-added" : ""}">${addedIds.has(p.id) ? '<small class="squad-added-label">新たに掲載</small>' : ""}${soccerPlayerButton(p)}<span>${esc(p.club)}</span></div>`,
+            )
+            .join("")}</div></section>`,
+      )
+      .join("");
+    if (!prior) {
+      $("squad-changes").innerHTML =
+        '<p class="note">前回の招集情報を取得できないため変更比較はありません。</p>';
+      return;
+    }
+    const changeList = (players) =>
+      players.length
+        ? `<ul>${players.map((p) => `<li><strong>${esc(p.name)}</strong><span>${esc(p.position || "")} · ${esc(p.club || "所属未取得")}</span></li>`).join("")}</ul>`
+        : '<p class="note">該当する選手はいません。</p>';
+    $("squad-changes").innerHTML =
+      `<p class="note">比較対象：${esc(formatDate(prior.date))}の掲載招集メンバー</p><div class="squad-change-grid"><section class="squad-change-card squad-change-added"><h5>新たに掲載<span>${added.length}人</span></h5>${changeList(added)}</section><section class="squad-change-card"><h5>前回のみ掲載<span>${removed.length}人</span></h5>${changeList(removed)}</section></div><p class="note squad-change-note">掲載名簿の差分です。初招集・復帰・離脱理由はこの比較だけでは断定しません。</p>`;
+  }
+  const formations = {
+    "4-3-3": [1, 4, 3, 3],
+    "4-2-3-1": [1, 4, 2, 3, 1],
+    "3-4-2-1": [1, 3, 4, 2, 1],
+  };
+  function lineupSlots() {
+    let offset = 0;
+    return formations[experience.lineup.formation]
+      .map((count, row, rows) => {
+        const positions = Array.from({ length: count }, (_, i) => ({
+          index: offset + i,
+          x: (i + 1) / (count + 1),
+          y: 1 - (row + 0.6) / rows.length,
+          label: row === 0 ? "GK" : `枠${offset + i}`,
+        }));
+        offset += count;
+        return positions;
+      })
+      .reverse();
+  }
+  function paintLineup() {
+    const players = soccerPlayers(),
+      selection = experience.lineup.players;
+    $("lineup-formation").value = experience.lineup.formation;
+    $("lineup-pitch").innerHTML = lineupSlots()
+      .map(
+        (row) =>
+          `<div class="pitch-row">${row.map((slot) => `<label class="pitch-slot"><span>${slot.label}</span><select data-lineup-slot="${slot.index}" aria-label="先発11人 ${slot.label}"><option value="">未選択</option>${players.map((p) => `<option value="${esc(p.id)}" ${p.id === selection[slot.index] ? "selected" : ""} ${selection.includes(p.id) && p.id !== selection[slot.index] ? "disabled" : ""}>${esc(p.name)} (${esc(p.position)})</option>`).join("")}${selection[slot.index] && !players.some((p) => p.id === selection[slot.index]) ? `<option value="${esc(selection[slot.index])}" selected>以前の指名：${esc(selection[slot.index])}（現在の掲載なし）</option>` : ""}</select></label>`).join("")}</div>`,
+      )
+      .join("");
+    $("lineup-export").disabled = !players.length;
+    $("lineup-status").textContent =
+      `${selection.filter(Boolean).length}/11人を配置 · このブラウザーに保存。フォーメーション変更時は枠の順番で引き継ぎます。`;
+  }
+  scope.listen($("lineup-formation"), "change", () => {
+    if (
+      saveExperience({
+        ...experience,
+        lineup: {
+          ...experience.lineup,
+          formation: $("lineup-formation").value,
+        },
+      })
+    ) {
+      $("lineup-image").hidden = true;
+      $("lineup-download").hidden = true;
+      paintLineup();
+    }
+  });
+  scope.listen($("lineup-pitch"), "change", (event) => {
+    const input = event.target.closest("[data-lineup-slot]");
+    if (!input) return;
+    const index = Number(input.dataset.lineupSlot),
+      players = [...experience.lineup.players],
+      id = input.value;
+    if (
+      id &&
+      (!soccerPlayers().some((p) => p.id === id) ||
+        players.some((p, i) => i !== index && p === id))
+    ) {
+      $("lineup-status").textContent = "同じ選手は重複して選べません。";
+      paintLineup();
+      return;
+    }
+    players[index] = id;
+    if (
+      saveExperience({
+        ...experience,
+        lineup: { ...experience.lineup, players },
+      })
+    ) {
+      $("lineup-image").hidden = true;
+      $("lineup-download").hidden = true;
+      paintLineup();
+    }
+  });
+  function drawLineup(canvas) {
+    canvas.width = 1000;
+    canvas.height = 1280;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw Error("画像作成に対応していません。");
+    ctx.fillStyle = "#173d32";
+    ctx.fillRect(0, 0, 1000, 1280);
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 34px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("MY JAPAN XI · " + experience.lineup.formation, 500, 60);
+    ctx.font = "18px sans-serif";
+    ctx.fillText("自分の先発予想 · " + currentDay(), 500, 98);
+    ctx.strokeStyle = "#ffffff77";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(35, 140, 930, 1020);
+    ctx.beginPath();
+    ctx.moveTo(35, 650);
+    ctx.lineTo(965, 650);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(500, 650, 90, 0, Math.PI * 2);
+    ctx.stroke();
+    for (const slot of lineupSlots().flat()) {
+      const x = 35 + slot.x * 930,
+        y = 140 + slot.y * 1020;
+      ctx.fillStyle = "#dce9ff";
+      ctx.beginPath();
+      ctx.arc(x, y - 18, 24, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#fff";
+      ctx.font = "bold 21px sans-serif";
+      const id = experience.lineup.players[slot.index],
+        p = soccerPlayers().find((p) => p.id === id);
+      ctx.fillText(p?.name || (id ? "過去の指名" : "未選択"), x, y + 30, 205);
+    }
+    ctx.fillStyle = "#fff";
+    ctx.font = "16px sans-serif";
+    ctx.fillText("HIBI SPORTS · 実際の先発発表とは異なります", 500, 1210);
+    return canvas;
+  }
+  scope.listen($("lineup-export"), "click", () => {
+    try {
+      const url = drawLineup(document.createElement("canvas")).toDataURL(
+        "image/png",
+      );
+      $("lineup-image").src = url;
+      $("lineup-image").hidden = false;
+      $("lineup-download").href = url;
+      $("lineup-download").hidden = false;
+      $("lineup-status").textContent =
+        "画像を確認して「PNG画像を保存」。スマホでは画像の長押しでも保存できます。外部には送信しません。";
+    } catch (error) {
+      $("lineup-status").textContent =
+        "画像を作成できませんでした。" + error.message;
+    }
+  });
+  function lineChart(series, metric) {
+    const values = series
+      .flatMap((s) => s.points.map((p) => p.value))
+      .filter(Number.isFinite);
+    if (!values.length) return empty("表示できる記録がありません。");
+    const low = Math.min(...values),
+      high = Math.max(...values),
+      span = high - low || 1;
+    const dates = [
+        ...new Set(series.flatMap((s) => s.points.map((p) => p.date))),
+      ].sort(),
+      x = (date) =>
+        60 + (dates.indexOf(date) / Math.max(dates.length - 1, 1)) * 600,
+      y = (value) =>
+        metric === "rank"
+          ? 35 + ((value - low) / span) * 170
+          : 205 - ((value - low) / span) * 170;
+    return `<svg viewBox="0 0 720 260" role="img" aria-label="${esc(metric === "rank" ? "順位（上ほど上位）" : "数値")}の推移"><line x1="60" y1="220" x2="660" y2="220" stroke="currentColor" opacity=".3"/>${series.map((s, i) => `<polyline fill="none" stroke="${i ? "#ce7951" : "#527fc3"}" stroke-width="3" points="${s.points.map((p) => `${x(p.date)},${y(p.value)}`).join(" ")}"/>${s.points.map((p) => `<circle cx="${x(p.date)}" cy="${y(p.value)}" r="5" fill="${i ? "#ce7951" : "#527fc3"}"><title>${esc(s.label)} ${esc(formatDate(p.date))}：${p.value}</title></circle>`).join("")}`).join("")}<text x="60" y="250" fill="currentColor" font-size="14">${esc(formatDate(dates[0]))}</text><text x="660" y="250" text-anchor="end" fill="currentColor" font-size="14">${esc(formatDate(dates.at(-1)))}</text></svg><div class="chart-values">${series.map((s) => `<details><summary>${esc(s.label)}の記録</summary>${s.points.map((p) => `<p>${esc(formatDate(p.date))}：${p.value}${metric === "rank" ? "位" : metric === "points" ? " pts" : "%"}</p>`).join("")}</details>`).join("")}</div>`;
+  }
+  function paintFifaHistory() {
+    const selector = $("fifa-history-country"),
+      before = selector.value;
+    selector.innerHTML = (
+      data.fifa?.ok ? data.fifa.data.rows.filter((r) => r.code !== "JPN") : []
+    )
+      .map((r) => `<option value="${esc(r.code)}">${esc(name(r))}</option>`)
+      .join("");
+    selector.value = [...selector.options].some((o) => o.value === before)
+      ? before
+      : selector.options[0]?.value || "";
+    const code = selector.value,
+      metric = $("fifa-history-metric").value || "rank";
+    const snapshots = Array.isArray(data.fifaHistory) ? data.fifaHistory : [];
+    const series = ["JPN", code].map((code) => ({
+      label:
+        code === "JPN"
+          ? "日本"
+          : data.fifa?.ok
+            ? name(
+                data.fifa.data.rows.find((r) => r.code === code) || {
+                  name: code,
+                },
+              )
+            : code,
+      points: snapshots
+        .map((s) => ({
+          date: s.date.slice(0, 10),
+          value: s.rows.find((r) => r.code === code)?.[metric],
+        }))
+        .filter((p) => Number.isFinite(p.value)),
+    }));
+    $("fifa-history-chart").innerHTML =
+      snapshots.length < 2
+        ? '<p class="note">' +
+          (snapshots.length
+            ? "公式発表1回分を記録しました。次の発表が保存されると推移が表示されます。"
+            : "まだ推移の保存記録がありません。") +
+          "</p>" +
+          series
+            .map(
+              (s) =>
+                `<p>${esc(s.label)}：${s.points[0]?.value ?? "未記録"}${metric === "rank" ? "位" : " pts"}</p>`,
+            )
+            .join("")
+        : lineChart(series, metric);
+  }
+  scope.listen($("fifa-history-country"), "change", paintFifaHistory);
+  scope.listen($("fifa-history-metric"), "change", paintFifaHistory);
+  function paintBaseballExtras() {
+    $("pennant-race").innerHTML = data.standings?.ok
+      ? ["c", "p"]
+          .map((league) => {
+            const rows = data.standings.data[league] || [];
+            return `<h4>${league === "c" ? "セ" : "パ"}・リーグ</h4><table><thead><tr><th>順位・球団</th><th>残り</th><th>首位との差</th><th>3位との勝敗差</th></tr></thead><tbody>${rows
+              .map((r, i) => {
+                const third = rows[2],
+                  gap =
+                    third &&
+                    [r.wins, r.losses, third.wins, third.losses].every(
+                      (v) => v !== "" && Number.isFinite(Number(v)),
+                    )
+                      ? (Number(third.wins) -
+                          Number(r.wins) +
+                          (Number(r.losses) - Number(third.losses))) /
+                        2
+                      : null;
+                return `<tr><th>${i + 1} ${esc(r.team)}</th><td>${r.games !== "" && Number.isFinite(Number(r.games)) ? Math.max(0, 143 - Number(r.games)) : "未取得"}</td><td>${esc(r.gap)}</td><td>${gap === null ? "未取得" : gap === 0 ? "同差" : gap > 0 ? gap + "後方" : Math.abs(gap) + "前方"}</td></tr>`;
+              })
+              .join("")}</tbody></table>`;
+          })
+          .join("")
+      : empty();
+    const starter = data.baseballStarters;
+    const matchingTeam = (full) =>
+      Object.entries(teams).find(
+        ([, label]) => full.includes(label) || label.includes(full),
+      )?.[0];
+    $("starting-pitchers").innerHTML = starter?.ok
+      ? `<p class="note">${esc(formatDate(starter.data.date))}の公式発表 · ${esc(stamp(starter))} · <a href="${esc(starter.source)}" target="_blank" rel="noopener noreferrer">NPB出典 ↗</a>${starter.data.date < currentDay() ? " · 過去の発表です" : ""}</p>` +
+        (starter.data.games.length
+          ? starter.data.games
+              .map(
+                (g) =>
+                  `<div class="starter-card"><p>${esc(g.info)}</p><div class="starter-pair">${g.pitchers
+                    .map((p) => {
+                      const team = p.team ? matchingTeam(p.team) : null,
+                        stats = team ? data.draft?.clubs?.[team]?.pit : null,
+                        row = stats?.ok
+                          ? stats.data.find(
+                              (r) =>
+                                normalizePlayerSearch(r.name) ===
+                                normalizePlayerSearch(p.name),
+                            )
+                          : null;
+                      return `<div><small>${esc(p.team)}</small><b>${team ? playerLink(team, p.name, data.year) : esc(p.name)}</b><span>今季 ${row?.values.w ?? "—"}勝 · 防御率 ${row?.values.era ?? "—"}</span></div>`;
+                    })
+                    .join("")}</div></div>`,
+              )
+              .join("")
+          : '<p class="note">この発表日に予告先発は掲載されていません。</p>')
+      : empty("予告先発を取得できませんでした。");
+    if (preferences.favorite === "all") {
+      $("team-form").innerHTML =
+        '<p class="note">設定で応援球団を選ぶと、直近10試合と月別勝率を表示します。</p>';
+      return;
+    }
+    const club = scheduleTeams[preferences.favorite],
+      games = data.baseballResults?.ok
+        ? data.baseballResults.data
+            .filter(
+              (g) =>
+                (g.home === club || g.away === club) &&
+                validScore(g.homeScore, g.awayScore),
+            )
+            .sort((a, b) => b.date.localeCompare(a.date))
+        : [];
+    if (!games.length) {
+      $("team-form").innerHTML = empty(
+        "応援球団の結果を取得できませんでした。",
+      );
+      return;
+    }
+    const outcome = (g) => {
+      const own = g.home === club ? g.homeScore : g.awayScore,
+        other = g.home === club ? g.awayScore : g.homeScore;
+      return own === other ? "draw" : own > other ? "win" : "loss";
+    };
+    const months = new Map();
+    for (const g of games) {
+      const month = g.date.slice(0, 7),
+        row = months.get(month) || { w: 0, l: 0, d: 0 };
+      row[outcome(g) === "win" ? "w" : outcome(g) === "loss" ? "l" : "d"]++;
+      months.set(month, row);
+    }
+    $("team-form").innerHTML =
+      `<p><b>${esc(club)}</b> · 直近10試合（左が最新）</p><div class="form-strip">${games
+        .slice(0, 10)
+        .map(
+          (g) =>
+            `<span class="outcome-${outcome(g)}" title="${esc(formatDate(g.date) + " " + g.home + " " + g.homeScore + "−" + g.awayScore + " " + g.away)}">${outcome(g) === "win" ? "○" : outcome(g) === "loss" ? "●" : "△"}</span>`,
+        )
+        .join("")}</div>` +
+      lineChart(
+        [
+          {
+            label: club + " 月別勝率",
+            points: [...months]
+              .sort(([a], [b]) => a.localeCompare(b))
+              .filter(([, r]) => r.w + r.l)
+              .map(([month, r]) => ({
+                date: month,
+                value: Math.round((r.w / (r.w + r.l)) * 1000) / 10,
+              })),
+          },
+        ],
+        "pct",
+      ) +
+      `<p class="note">${formatDate(games.at(-1).date)}〜${formatDate(games[0].date)}の取得分。引き分けを除いた勝率。今月は途中経過。取得範囲にポストシーズンが含まれる場合もあります。</p>`;
+  }
+  function paintDataHealth() {
+    const sources = [
+      ["リーグ順位", data.standings],
+      ["野球日程", data.baseballGames],
+      ["野球結果", data.baseballResults],
+      ["予告先発", data.baseballStarters],
+      ["代表日程", data.footballGames],
+      ["代表結果", data.footballHistory],
+      ["代表メンバー・イベント", data.footballSquad],
+      ["クラブ日程（J1・海外）", data.overseas],
+      ["FIFA順位", data.fifa],
+      ...newsSources().map(([, label, source]) => [label + "ニュース", source]),
+      ...Object.entries(data.draft?.clubs || {}).flatMap(([team, club]) => [
+        ["個人成績 " + (teams[team] || team) + " 打者", club.bat],
+        ["個人成績 " + (teams[team] || team) + " 投手", club.pit],
+      ]),
+    ];
+    $("data-health-list").innerHTML =
+      `<table><thead><tr><th>情報</th><th>取得結果・時刻（日本時間）</th></tr></thead><tbody>${sources.map(([label, source]) => `<tr><th>${label}</th><td>${source?.ok ? "取得済み · " + esc(stamp(source)) : "未取得・取得失敗"}${source?.source && /^https:\/\//.test(source.source) ? ` · <a href="${esc(source.source)}" target="_blank" rel="noopener noreferrer">出典 ↗</a>` : ""}</td></tr>`).join("")}</tbody></table><p class="note">取得時刻は配信元の情報が確定した時刻とは異なります。失敗時は推測で埋めません。</p>`;
+  }
+  function paintEnhancements() {
+    paintChanges();
+    paintSoccerResults();
+    paintCountdown();
+    paintSquad();
+    paintLineup();
+    paintFifaHistory();
+    paintBaseballExtras();
+    paintDataHealth();
+    applyExperience();
+    paintBackupReminder();
+  }
+  applyExperience();
+  paintBackupReminder();
+  function paintStatus() {
+    if (!data) return;
+    const failed = [
+      ...Object.values(data.draft?.clubs || {}).flatMap((club) => [
+        club.bat,
+        club.pit,
+      ]),
+      data.standings,
+      data.baseballGames,
+      data.footballGames,
+      data.fifa,
+      ...[
+        data.baseballResults,
+        data.footballHistory,
+        ...newsSources().map(([, label, source]) => source),
+        data.footballRivals,
+        data.footballSquad,
+        data.baseballStarters,
+        data.overseas,
+        ...(data.footballRivals?.ok
+          ? data.footballRivals.data.countries.map((c) => c.games)
+          : []),
+      ].filter(Boolean),
+      ...Object.values(data.leaders).flatMap((x) => [x.c, x.p]),
+    ].filter((s) => !s.ok).length;
+    const stale = Date.now() - Date.parse(data.generatedAt) > 7200000;
+    $("status").classList.toggle("error", !!failed || stale);
+    $("status").textContent = failed
+      ? `一部のデータを取得できませんでした（${failed}件）。各欄の出典をご確認ください。`
+      : stale
+        ? "最終取得から2時間以上経過しています。自動更新が遅れています。画面上部の更新ボタンをご利用ください。"
+        : dataApi
+          ? "公開情報から取得 · 更新ボタンで再取得（5分間隔） · 試合速報ではありません"
+          : "公開情報から取得 · 30分ごとに自動更新予定 · 試合速報ではありません";
+  }
+  const dataApi = "/api/data";
+  if (dataApi) {
+    $("refresh").textContent = "↻ 最新情報に更新";
+    $("data-update-link").hidden = true;
+    $("data-update-link").nextElementSibling.textContent =
+      "ログイン不要 · 再取得は5分間隔";
+    const source = $("sources-update-note");
+    if (source)
+      source.textContent =
+        "ニュースはYahoo!ニュース・ゲキサカの公開RSSを1分ごとに確認し、タブに戻った時にも更新します。「ニュースを更新」はキャッシュを使わず再取得します。スポーツ情報は15分ごとに取得済みデータを確認します。通信失敗時は前回取得分を表示し、更新失敗をお知らせします。試合速報ではありません。";
+  }
+  let liveNews = null;
+  let newsLoading = false;
+  function applyLiveNews() {
+    if (!data || !liveNews) return;
+    data.daily = {
+      ...data.daily,
+      ...liveNews,
+      newsCategories: {
+        ...data.daily?.newsCategories,
+        ...liveNews.newsCategories,
+      },
+      locations: { ...data.daily?.locations, ...liveNews.locations },
+    };
+  }
+  async function refreshNews(force = false) {
+    if (newsLoading) return;
+    newsLoading = true;
+    const region = preferences.region;
+    const button = $("carousel-refresh");
+    button.disabled = true;
+    try {
+      const response = await scope.fetch(
+        `/api/news?region=${encodeURIComponent(region)}`,
+        {
+          method: force ? "POST" : "GET",
+          cache: "no-store",
+          signal: AbortSignal.timeout(15000),
+        },
+      );
+      if (!response.ok) throw Error("News unavailable");
+      const next = await response.json();
+      if (
+        !next.nationalNews ||
+        !Array.isArray(next.nationalNews.data) ||
+        !next.newsCategories ||
+        !next.locations
+      )
+        throw Error("Invalid news data");
+      if (scope.disposed) return;
+      liveNews = {
+        ...next,
+        locations: { ...liveNews?.locations, ...next.locations },
+      };
+      applyLiveNews();
+      if (data) {
+        paintDaily();
+        paintChanges();
+        paintStudio();
+      }
+    } catch {
+      if (scope.disposed) return;
+      if (data?.daily?.nationalNews)
+        data.daily.nationalNews = { ...data.daily.nationalNews, stale: true };
+      if (data) paintStudio();
+    } finally {
+      if (!scope.disposed) {
+        newsLoading = false;
+        button.disabled = false;
+        if (preferences.region !== region) void refreshNews();
+      }
+    }
+  }
+  scope.setInterval(() => {
+    if (!document.hidden) void refreshNews();
+  }, 60000);
+  scope.listen(window, "focus", () => {
+    if (!document.hidden) void refreshNews();
+  });
+  let loading = false,
+    dataInitialized = false;
+  async function refresh(force = false) {
+    if (loading) return;
+    loading = true;
+    $("refresh").disabled = true;
+    $("status").textContent =
+      force && dataApi
+        ? "最新情報を取得・集計しています…（数十秒〜3分程度）"
+        : "公開済みのデータを確認しています…";
+    try {
+      const response = dataApi
+        ? await scope.fetch(dataApi, {
+            method: force ? "POST" : "GET",
+            headers: force ? { "X-Daily-Desk-Refresh": "1" } : {},
+            cache: "no-store",
+            signal: AbortSignal.timeout(force ? 235000 : 30000),
+          })
+        : await scope.fetch("./data/sports.json?t=" + Date.now(), {
+            cache: "no-store",
+            signal: AbortSignal.timeout(30000),
+          });
+      if (!response.ok) throw Error("データ取得エラー");
+      const next = await response.json();
+      if (scope.disposed) return;
+      if (
+        !Number.isInteger(next.year) ||
+        !Number.isFinite(Date.parse(next.generatedAt)) ||
+        !Array.isArray(next.categories) ||
+        !next.leaders ||
+        !next.standings
+      )
+        throw Error("データ形式エラー");
+      data = next;
+      applyLiveNews();
+      $("today").textContent = new Intl.DateTimeFormat("ja-JP", {
+        timeZone: "Asia/Tokyo",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        weekday: "short",
+      }).format(new Date());
+      $("season").textContent = data.year;
+      const teamBefore = $("team").value;
+      $("team").innerHTML =
+        '<option value="all">すべてのチーム</option>' +
+        Object.entries(scheduleTeams)
+          .map(([key, t]) => `<option value="${esc(t)}">${esc(t)}</option>`)
+          .join("");
+      $("team").value = [...$("team").options].some(
+        (o) => o.value === teamBefore,
+      )
+        ? teamBefore
+        : "all";
+      if (!dataInitialized) {
+        applyFavorite();
+        dataInitialized = true;
+      }
+      $("categories").innerHTML = data.categories
+        .map(
+          (c) =>
+            `<button data-category="${c.id}" class="${category === c.id ? "selected" : ""}" aria-pressed="${category === c.id}">${esc(c.label)}</button>`,
+        )
+        .join("");
+      paintStandings();
+      paintGames();
+      paintLeaders();
+      paintFootball();
+      paintFifa();
+      paintCalendar();
+      paintHome();
+      paintTimes();
+      paintComparisonTime();
+      paintRecentResults();
+      paintOpponentProfile();
+      paintDraft();
+      paintDaily();
+      paintRivals();
+      paintEnhancements();
+      paintStudio();
+      void refreshNews();
+      paintStatus();
+      const updateState = response.headers?.get("X-Data-Update");
+      if (force && updateState === "cached")
+        $("status").textContent +=
+          " · 5分以内のため取得済みデータを表示しています。";
+      if (force && updateState === "busy")
+        $("status").textContent +=
+          " · 他の更新が進行中です。少し待って再操作してください。";
+      const generated = new Date(data.generatedAt);
+      $("fetched-at").textContent =
+        "データ生成日時：" + formatDateTime(generated) + "（日本時間）";
+      $("data-updated").textContent =
+        "データ取得・集計完了：" + formatDateTime(generated) + "（日本時間）";
+    } catch {
+      if (scope.disposed) return;
+      $("status").classList.add("error");
+      $("status").textContent = data
+        ? "更新に失敗しました。表示中は前回取得のデータです。出典をご確認ください。"
+        : "データを取得できませんでした。「公開データを再読込」から再試行してください。";
+      if (!data)
+        for (const id of [
+          "standings",
+          "baseball-games",
+          "leaders",
+          "football-game",
+          "fifa-summary",
+          "roadmap",
+          "today-games",
+          "tomorrow-games",
+          "baseball-results",
+          "football-result",
+          "opponent-profile",
+        ])
+          $(id).innerHTML = empty();
+    } finally {
+      if (scope.disposed) return;
+      loading = false;
+      $("refresh").disabled = false;
+    }
+  }
+  scope.listen($("categories"), "click", (e) => {
+    const b = e.target.closest("[data-category]");
+    if (!b) return;
+    category = b.dataset.category;
+    $("categories")
+      .querySelectorAll("button")
+      .forEach((el) => {
+        el.classList.toggle("selected", el === b);
+        el.setAttribute("aria-pressed", String(el === b));
+      });
+    paintLeaders();
+  });
+  scope.listen(document, "visibilitychange", () => {
+    if (!document.hidden) {
+      refresh();
+      void refreshNews();
+    }
+  });
+  scope.listen($("refresh"), "click", () => {
+    refresh(true);
+    void refreshNews(true);
+  });
+  scope.setInterval(() => {
+    if (!document.hidden) refresh();
+  }, 900000);
+  refresh();
+  function paintStudio() {
+    window.dispatchEvent(new CustomEvent("workspace:data"));
+  }
+
+  return {
+    get data() {
+      return data;
+    },
+    get panels() {
+      return panels;
+    },
+    get navigatePanel() {
+      return navigatePanel;
+    },
+    get esc() {
+      return esc;
+    },
+    get preferences() {
+      return preferences;
+    },
+    get teams() {
+      return teams;
+    },
+    get currentDay() {
+      return currentDay;
+    },
+    get calendarEvents() {
+      return calendarEvents;
+    },
+    get gameState() {
+      return gameState;
+    },
+    get eventLabel() {
+      return eventLabel;
+    },
+    get completedFootball() {
+      return completedFootball;
+    },
+    get nextFootballGame() {
+      return nextFootballGame;
+    },
+    get refresh() {
+      return refresh;
+    },
+    get refreshNews() {
+      return refreshNews;
+    },
+    get collectBackup() {
+      return collectBackup;
+    },
+    get validateBackup() {
+      return validateBackup;
+    },
+    get applyBackup() {
+      return applyBackup;
+    },
+  };
+}
