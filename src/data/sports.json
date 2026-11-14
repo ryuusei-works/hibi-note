@@ -47717,19 +47717,27 @@
             "career": [
               "小平八小アベリアFC",
               "杉並シーダーズ",
-              "横浜F・マリノスプライマリー",
-              "横浜F・マリノスジュニアユース",
+              "横浜Ｆ・マリノスプライマリー",
+              "横浜Ｆ・マリノスジュニアユース",
               "桐蔭学園高校",
               "明治大学体育会サッカー部",
               "鹿島アントラーズ"
             ],
             "programClub": "鹿島アントラーズ",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/hayakawa_tomoki.json",
+            "fetchedAt": "2026-11-14T02:53:36.515Z"
           },
           "caps": 5,
           "goals": null,
           "conceded": 0,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/hayakawa_tomoki.json",
+            "fetchedAt": "2026-11-14T02:53:36.515Z"
+          }
         },
         {
           "id": "kokubo_leo_brian",
@@ -47742,25 +47750,33 @@
             "birthDate": "2001-01-23",
             "birthplace": "千葉県",
             "heightCm": 193,
-            "weightKg": 78,
+            "weightKg": 93,
             "debut": "ベネズエラ戦（2026年9月28日、キリンチャレンジカップ2026）",
             "career": [
               "柏エフォートフットボールクラブ",
               "柏レイソルU-15",
               "柏レイソルU-18",
               "柏レイソル",
-              "ベンフィカ U-23（ポルトガル）",
-              "SLベンフィカB（ポルトガル）",
-              "SLベンフィカ（ポルトガル）",
-              "シントトロイデンVV（ベルギー）"
+              "ベンフィカ U-23(ポルトガル)",
+              "SLベンフィカB(ポルトガル)",
+              "SLベンフィカ(ポルトガル)",
+              "シントトロイデンVV(ベルギー)"
             ],
             "programClub": "シントトロイデンVV（ベルギー）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/kokubo_leo_brian.json",
+            "fetchedAt": "2026-11-14T02:53:36.509Z"
           },
           "caps": 1,
           "goals": null,
           "conceded": 0,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/kokubo_leo_brian.json",
+            "fetchedAt": "2026-11-14T02:53:36.509Z"
+          }
         },
         {
           "id": "suzuki_zion",
@@ -47781,17 +47797,25 @@
               "浦和レッズジュニアユース",
               "浦和レッズユース",
               "浦和レッズ",
-              "シントトロイデンVV（ベルギー）",
-              "パルマ・カルチョ（イタリア）",
-              "アストン・ビラ（イングランド）"
+              "シントトロイデンVV(ベルギー)",
+              "パルマ・カルチョ(イタリア)",
+              "アストン・ビラ(イングランド)"
             ],
             "programClub": "アストン・ビラ（イングランド）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/suzuki_zion.json",
+            "fetchedAt": "2026-11-14T02:53:36.539Z"
           },
           "caps": 29,
           "goals": null,
           "conceded": 19,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/suzuki_zion.json",
+            "fetchedAt": "2026-11-14T02:53:36.539Z"
+          }
         },
         {
           "id": "itakura_kou",
@@ -47813,20 +47837,28 @@
               "川崎フロンターレU-18",
               "川崎フロンターレ",
               "ベガルタ仙台",
-              "マンチェスター・シティ（イングランド）",
-              "FCフローニンゲン（オランダ）",
-              "シャルケ04（ドイツ）",
-              "ボルシア・メンヘングラートバッハ（ドイツ）",
-              "アヤックス（オランダ）",
-              "ボルシア・メンヘングラートバッハ（ドイツ）"
+              "マンチェスター・シティ(イングランド)",
+              "FCフローニンゲン(オランダ)",
+              "シャルケ04(ドイツ)",
+              "ボルシア・メンヘングラートバッハ(ドイツ)",
+              "アヤックス(オランダ)",
+              "ボルシア・メンヘングラートバッハ(ドイツ)"
             ],
             "programClub": "ボルシア・メンヘングラートバッハ（ドイツ）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/itakura_kou.json",
+            "fetchedAt": "2026-11-14T02:53:36.554Z"
           },
           "caps": 43,
           "goals": 2,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/itakura_kou.json",
+            "fetchedAt": "2026-11-14T02:53:36.554Z"
+          }
         },
         {
           "id": "watanabe_tsuyoshi",
@@ -47843,28 +47875,63 @@
             "debut": "香港戦（2019年12月14日、EAFF E-1 サッカー選手権 2019 決勝大会）",
             "career": [
               "大袋フットボールクラブ",
-              "FC東京U-15深川",
+              "ＦＣ東京U-15深川",
               "山梨学院大学附属高等学校",
               "中央大学学友会サッカー部",
-              "FC東京",
-              "KVコルトレイク（ベルギー）",
-              "KAAヘント（ベルギー）",
-              "フェイエノールト（オランダ）"
+              "ＦＣ東京",
+              "KVコルトレイク(ベルギー)",
+              "KAAヘント(ベルギー)",
+              "フェイエノールト(オランダ)"
             ],
             "programClub": "フェイエノールト（オランダ）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/watanabe_tsuyoshi.json",
+            "fetchedAt": "2026-11-14T02:53:36.581Z"
           },
           "caps": 14,
           "goals": 0,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/watanabe_tsuyoshi.json",
+            "fetchedAt": "2026-11-14T02:53:36.581Z"
+          }
         },
         {
           "id": "machida_koki",
           "name": "町田 浩樹",
           "position": "DF",
           "club": "TSGホッフェンハイム／ドイツ",
-          "url": "https://www.jfa.jp/samuraiblue/member/machida_koki.html"
+          "url": "https://www.jfa.jp/samuraiblue/member/machida_koki.html",
+          "statsSource": "https://www.jfa.jp/national_team/inc/member/samuraiblue/machida_koki.json",
+          "profile": {
+            "englishName": "MACHIDA Koki",
+            "birthDate": "1997-08-25",
+            "heightCm": 190,
+            "weightKg": 84,
+            "career": [
+              "鹿島アントラーズつくばジュニア",
+              "鹿島アントラーズつくばジュニアユース",
+              "鹿島アントラーズユース",
+              "鹿島アントラーズ",
+              "ユニオン・サンジロワーズ(ベルギー)",
+              "TSGホッフェンハイム(ドイツ)"
+            ],
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/machida_koki.json",
+            "fetchedAt": "2026-11-14T02:53:36.579Z"
+          },
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/machida_koki.json",
+            "fetchedAt": "2026-11-14T02:53:36.579Z"
+          },
+          "caps": 17,
+          "goals": 0,
+          "conceded": null,
+          "asOf": null,
+          "statsKind": "directory"
         },
         {
           "id": "ito_hiroki",
@@ -47887,16 +47954,24 @@
               "ジュビロ磐田",
               "名古屋グランパス",
               "ジュビロ磐田",
-              "VfBシュツットガルト（ドイツ）",
-              "バイエルン・ミュンヘン（ドイツ）"
+              "VfBシュツットガルト (ドイツ)",
+              "バイエルン・ミュンヘン(ドイツ)"
             ],
             "programClub": "バイエルン・ミュンヘン（ドイツ）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/ito_hiroki.json",
+            "fetchedAt": "2026-11-14T02:53:36.591Z"
           },
           "caps": 30,
           "goals": 1,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/ito_hiroki.json",
+            "fetchedAt": "2026-11-14T02:53:36.591Z"
+          }
         },
         {
           "id": "seko_ayumu",
@@ -47916,16 +47991,24 @@
               "セレッソ大阪U-15",
               "セレッソ大阪U-18",
               "セレッソ大阪",
-              "グラスホッパーCZ（スイス）",
-              "ル・アーヴルAC（フランス）"
+              "グラスホッパーCZ(スイス)",
+              "ル・アーヴルAC(フランス)"
             ],
             "programClub": "ル・アーヴルAC（フランス）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/seko_ayumu.json",
+            "fetchedAt": "2026-11-14T02:53:36.618Z"
           },
           "caps": 18,
           "goals": 0,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/seko_ayumu.json",
+            "fetchedAt": "2026-11-14T02:53:36.618Z"
+          }
         },
         {
           "id": "nakano_shuto",
@@ -47941,25 +48024,63 @@
             "weightKg": 83,
             "debut": "ベネズエラ戦（2026年9月28日、キリンチャレンジカップ2026）",
             "career": [
-              "AZ86東京青梅",
-              "桐生第一高校",
-              "桐蔭横浜大学",
+              "AZʼ86東京⻘梅ジュニア",
+              "AZʼ86東京⻘梅",
+              "桐⽣第⼀⾼校",
+              "桐蔭横浜⼤学",
               "サンフレッチェ広島"
             ],
             "programClub": "サンフレッチェ広島",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/nakano_shuto.json",
+            "fetchedAt": "2026-11-14T02:53:36.636Z"
           },
           "caps": 1,
           "goals": 0,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/nakano_shuto.json",
+            "fetchedAt": "2026-11-14T02:53:36.636Z"
+          }
         },
         {
           "id": "sugawara_yukinari",
           "name": "菅原 由勢",
           "position": "DF",
           "club": "カリャリ・カルチョ／イタリア",
-          "url": "https://www.jfa.jp/samuraiblue/member/sugawara_yukinari.html"
+          "url": "https://www.jfa.jp/samuraiblue/member/sugawara_yukinari.html",
+          "statsSource": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sugawara_yukinari.json",
+          "profile": {
+            "englishName": "SUGAWARA Yukinari",
+            "birthDate": "2000-06-28",
+            "heightCm": 179,
+            "weightKg": 71,
+            "career": [
+              "AS.ラランジャ豊川U12",
+              "名古屋グランパスU15",
+              "名古屋グランパスU-18",
+              "名古屋グランパス",
+              "AZアルクマール(オランダ)",
+              "サウサンプトンFC(イングランド)",
+              "ヴェルダー・ブレーメン(ドイツ)",
+              "カリャリ・カルチョ(イタリア)"
+            ],
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sugawara_yukinari.json",
+            "fetchedAt": "2026-11-14T02:53:36.657Z"
+          },
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sugawara_yukinari.json",
+            "fetchedAt": "2026-11-14T02:53:36.657Z"
+          },
+          "caps": 25,
+          "goals": 2,
+          "conceded": null,
+          "asOf": null,
+          "statsKind": "directory"
         },
         {
           "id": "suzuki_junnosuke",
@@ -47979,15 +48100,23 @@
               "岐阜VAMOS",
               "帝京大学可児高校",
               "湘南ベルマーレ",
-              "FCコペンハーゲン（デンマーク）"
+              "FCコペンハーゲン(デンマーク)"
             ],
             "programClub": "FCコペンハーゲン（デンマーク）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/suzuki_junnosuke.json",
+            "fetchedAt": "2026-11-14T02:53:36.640Z"
           },
           "caps": 10,
           "goals": 0,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/suzuki_junnosuke.json",
+            "fetchedAt": "2026-11-14T02:53:36.640Z"
+          }
         },
         {
           "id": "ito_junya",
@@ -48007,24 +48136,62 @@
               "神奈川大学",
               "ヴァンフォーレ甲府",
               "柏レイソル",
-              "KRCゲンク（ベルギー）",
-              "スタッド・ランス（フランス）",
-              "KRCゲンク（ベルギー）"
+              "KRCゲンク(ベルギー)",
+              "スタッド・ランス(フランス)",
+              "KRCゲンク(ベルギー)"
             ],
             "programClub": "KRCゲンク（ベルギー）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/ito_junya.json",
+            "fetchedAt": "2026-11-14T02:53:36.652Z"
           },
           "caps": 75,
           "goals": 16,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/ito_junya.json",
+            "fetchedAt": "2026-11-14T02:53:36.652Z"
+          }
         },
         {
           "id": "minamino_takumi",
           "name": "南野 拓実",
           "position": "MF/FW",
           "club": "ASモナコ／フランス",
-          "url": "https://www.jfa.jp/samuraiblue/member/minamino_takumi.html"
+          "url": "https://www.jfa.jp/samuraiblue/member/minamino_takumi.html",
+          "statsSource": "https://www.jfa.jp/national_team/inc/member/samuraiblue/minamino_takumi.json",
+          "profile": {
+            "englishName": "MINAMINO Takumi",
+            "birthDate": "1995-01-16",
+            "heightCm": 172,
+            "weightKg": 68,
+            "career": [
+              "ゼッセル熊取フットボールクラブ",
+              "セレッソ大阪U-15",
+              "セレッソ大阪U-18",
+              "セレッソ大阪",
+              "ザルツブルク(オーストリア)",
+              "リバプールFC(イングランド)",
+              "サウサンプトン(イングランド)",
+              "リバプールFC(イングランド)",
+              "ASモナコ(フランス)"
+            ],
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/minamino_takumi.json",
+            "fetchedAt": "2026-11-14T02:53:36.714Z"
+          },
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/minamino_takumi.json",
+            "fetchedAt": "2026-11-14T02:53:36.714Z"
+          },
+          "caps": 73,
+          "goals": 26,
+          "conceded": null,
+          "asOf": null,
+          "statsKind": "directory"
         },
         {
           "id": "kamada_daichi",
@@ -48042,26 +48209,63 @@
             "career": [
               "東山高等学校",
               "サガン鳥栖",
-              "アイントラハト・フランクフルト（ドイツ）",
-              "シントトロイデンVV（ベルギー）",
-              "アイントラハト・フランクフルト（ドイツ）",
-              "SSラツィオ（イタリア）",
-              "クリスタル・パレス（イングランド）"
+              "アイントラハト・フランクフルト(ドイツ)",
+              "シントトロイデンVV(ベルギー)",
+              "アイントラハト・フランクフルト(ドイツ)",
+              "SSラツィオ(イタリア)",
+              "クリスタル・パレス(イングランド)"
             ],
             "programClub": "クリスタル・パレス（イングランド）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/kamada_daichi.json",
+            "fetchedAt": "2026-11-14T02:53:36.722Z"
           },
           "caps": 55,
           "goals": 14,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/kamada_daichi.json",
+            "fetchedAt": "2026-11-14T02:53:36.722Z"
+          }
         },
         {
           "id": "sakamoto_tatsuhiro",
           "name": "坂元 達裕",
           "position": "MF/FW",
           "club": "コベントリー・シティ／イングランド",
-          "url": "https://www.jfa.jp/samuraiblue/member/sakamoto_tatsuhiro.html"
+          "url": "https://www.jfa.jp/samuraiblue/member/sakamoto_tatsuhiro.html",
+          "statsSource": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sakamoto_tatsuhiro.json",
+          "profile": {
+            "englishName": "SAKAMOTO Tatsuhiro",
+            "birthDate": "1996-10-22",
+            "heightCm": 170,
+            "weightKg": 63,
+            "career": [
+              "⻘葉フットボールクラブ育成会",
+              "ＦＣ東京Ｕ－１５むさし",
+              "群⾺育英学園私⽴前橋育英⾼等学校",
+              "東洋⼤学体育会サッカー部",
+              "モンテディオ⼭形",
+              "セレッソ⼤阪",
+              "オーステンデ(ベルギー)",
+              "コベントリー・シティ(イングランド)"
+            ],
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sakamoto_tatsuhiro.json",
+            "fetchedAt": "2026-11-14T02:53:36.677Z"
+          },
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sakamoto_tatsuhiro.json",
+            "fetchedAt": "2026-11-14T02:53:36.677Z"
+          },
+          "caps": 2,
+          "goals": 0,
+          "conceded": null,
+          "asOf": null,
+          "statsKind": "directory"
         },
         {
           "id": "soma_yuki",
@@ -48084,24 +48288,62 @@
               "名古屋グランパス",
               "鹿島アントラーズ",
               "名古屋グランパス",
-              "カサ・ピアAC（ポルトガル）",
+              "カサ・ピアAC(ポルトガル)",
               "名古屋グランパス",
               "FC町田ゼルビア"
             ],
             "programClub": "FC町田ゼルビア",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/soma_yuki.json",
+            "fetchedAt": "2026-11-14T02:53:36.693Z"
           },
           "caps": 21,
           "goals": 5,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/soma_yuki.json",
+            "fetchedAt": "2026-11-14T02:53:36.693Z"
+          }
         },
         {
           "id": "ogawa_koki",
           "name": "小川 航基",
           "position": "MF/FW",
           "club": "FC町田ゼルビア",
-          "url": "https://www.jfa.jp/samuraiblue/member/ogawa_koki.html"
+          "url": "https://www.jfa.jp/samuraiblue/member/ogawa_koki.html",
+          "statsSource": "https://www.jfa.jp/national_team/inc/member/samuraiblue/ogawa_koki.json",
+          "profile": {
+            "englishName": "OGAWA Koki",
+            "birthDate": "1997-08-08",
+            "heightCm": 186,
+            "weightKg": 78,
+            "career": [
+              "横浜港北サッカークラブ",
+              "大豆戸FCジュニアユース",
+              "桐光学園高等学校",
+              "ジュビロ磐田",
+              "水戸ホーリーホック",
+              "ジュビロ磐田",
+              "横浜FC",
+              "NECナイメヘン（オランダ）",
+              "FC町田ゼルビア"
+            ],
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/ogawa_koki.json",
+            "fetchedAt": "2026-11-14T02:53:36.752Z"
+          },
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/ogawa_koki.json",
+            "fetchedAt": "2026-11-14T02:53:36.752Z"
+          },
+          "caps": 18,
+          "goals": 11,
+          "conceded": null,
+          "asOf": null,
+          "statsKind": "directory"
         },
         {
           "id": "maeda_daizen",
@@ -48123,18 +48365,26 @@
               "松本山雅FC",
               "水戸ホーリーホック",
               "松本山雅FC",
-              "CSマリティモ（ポルトガル）",
-              "横浜F・マリノス",
-              "セルティック（スコットランド）",
-              "イプスウィッチ・タウン（イングランド）"
+              "CSマリティモ(ポルトガル)",
+              "横浜Ｆ・マリノス",
+              "セルティック(スコットランド)",
+              "イプスウィッチ・タウン(イングランド)"
             ],
             "programClub": "イプスウィッチ・タウン（イングランド）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/maeda_daizen.json",
+            "fetchedAt": "2026-11-14T02:53:36.757Z"
           },
           "caps": 31,
           "goals": 5,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/maeda_daizen.json",
+            "fetchedAt": "2026-11-14T02:53:36.757Z"
+          }
         },
         {
           "id": "doan_ritsu",
@@ -48150,25 +48400,33 @@
             "weightKg": 70,
             "debut": "コスタリカ戦（2018年9月11日、キリンチャレンジカップ2018）",
             "career": [
-              "浦風FCJr",
+              "浦風ＦＣＪｒ",
               "西宮市少年サッカースクール",
               "ガンバ大阪ジュニアユース",
               "ガンバ大阪ユース",
               "ガンバ大阪",
-              "FCフローニンゲン（オランダ）",
-              "PSVアイントホーフェン（オランダ）",
-              "アルミニア・ビーレフェルト（ドイツ）",
-              "PSVアイントホーフェン（オランダ）",
-              "SCフライブルク（ドイツ）",
-              "アイントラハト・フランクフルト（ドイツ）"
+              "FCフローニンゲン(オランダ)",
+              "PSVアイントホーフェン(オランダ)",
+              "アルミニア・ビーレフェルト(ドイツ)",
+              "PSVアイントホーフェン(オランダ)",
+              "SCフライブルク(ドイツ)",
+              "アイントラハト・フランクフルト(ドイツ)"
             ],
             "programClub": "アイントラハト・フランクフルト（ドイツ）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/doan_ritsu.json",
+            "fetchedAt": "2026-11-14T02:53:36.741Z"
           },
           "caps": 71,
           "goals": 11,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/doan_ritsu.json",
+            "fetchedAt": "2026-11-14T02:53:36.741Z"
+          }
         },
         {
           "id": "tanaka_ao",
@@ -48188,16 +48446,24 @@
               "川崎フロンターレU-15",
               "川崎フロンターレU-18",
               "川崎フロンターレ",
-              "フォルトゥナ・デュッセルドルフ（ドイツ）",
-              "リーズ・ユナイテッド（イングランド）"
+              "フォルトゥナ・デュッセルドルフ(ドイツ)",
+              "リーズ・ユナイテッド(イングランド)"
             ],
             "programClub": "リーズ・ユナイテッド（イングランド）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/tanaka_ao.json",
+            "fetchedAt": "2026-11-14T02:53:36.764Z"
           },
           "caps": 43,
           "goals": 8,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/tanaka_ao.json",
+            "fetchedAt": "2026-11-14T02:53:36.764Z"
+          }
         },
         {
           "id": "nakamura_keito",
@@ -48214,25 +48480,33 @@
             "debut": "ウルグアイ戦（2023年3月24日、キリンチャレンジカップ2023）",
             "career": [
               "柏イーグルスTOR'82",
-              "柏レイソルU-12",
+              "柏レイソル U-12",
               "高野山サッカースポーツ少年団",
               "三菱養和サッカークラブ巣鴨ジュニアユース",
               "三菱養和サッカークラブユース",
               "ガンバ大阪",
-              "FCトゥウェンテ（オランダ）",
-              "シントトロイデンVV（ベルギー）",
-              "FCジュニアーズ（オーストリア）",
-              "LASK（オーストリア）",
-              "スタッド・ランス（フランス）",
-              "オリンピック・リヨン（フランス）"
+              "FCトゥウェンテ(オランダ)",
+              "シントトロイデンVV(ベルギー)",
+              "FCジュニアーズ(オーストリア)",
+              "LASK(オーストリア)",
+              "スタッド・ランス(フランス)",
+              "オリンピック・リヨン(フランス)"
             ],
             "programClub": "オリンピック・リヨン（フランス）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/nakamura_keito.json",
+            "fetchedAt": "2026-11-14T02:53:36.790Z"
           },
           "caps": 31,
           "goals": 11,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/nakamura_keito.json",
+            "fetchedAt": "2026-11-14T02:53:36.790Z"
+          }
         },
         {
           "id": "sano_kaishu",
@@ -48248,20 +48522,25 @@
             "weightKg": 67,
             "debut": "ミャンマー戦（2023年11月16日、FIFAワールドカップ26アジア2次予選兼AFCアジアカップサウジアラビア2027予選）",
             "career": [
-              "FCヴィパルテU-12",
-              "FCヴィパルテU-15",
-              "米子北高等学校",
               "FC町田ゼルビア",
               "鹿島アントラーズ",
-              "マインツ05（ドイツ）"
+              "マインツ05(ドイツ)"
             ],
             "programClub": "マインツ05（ドイツ）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sano_kaishu.json",
+            "fetchedAt": "2026-11-14T02:53:36.782Z"
           },
           "caps": 17,
           "goals": 1,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sano_kaishu.json",
+            "fetchedAt": "2026-11-14T02:53:36.782Z"
+          }
         },
         {
           "id": "kubo_takefusa",
@@ -48278,26 +48557,34 @@
             "debut": "エルサルバドル戦（2019年6月9日、キリンチャレンジカップ2019）",
             "career": [
               "川崎フロンターレU-12",
-              "FCバルセロナ（スペイン）",
+              "FCバルセロナ(スペイン)",
               "FC東京U-15むさし",
               "FC東京U-18",
               "横浜F・マリノス",
               "FC東京",
-              "レアル・マドリードCF（スペイン）",
-              "RCDマジョルカ（スペイン）",
-              "ビジャレアルCF（スペイン）",
-              "ヘタフェCF（スペイン）",
-              "レアル・マドリードCF（スペイン）",
-              "RCDマジョルカ（スペイン）",
-              "レアル・ソシエダ（スペイン）"
+              "レアル・マドリードCF(スペイン)",
+              "RCDマジョルカ(スペイン)",
+              "ビジャレアルCF(スペイン)",
+              "ヘタフェCF(スペイン)",
+              "レアル・マドリードCF(スペイン)",
+              "RCDマジョルカ(スペイン)",
+              "レアル・ソシエダ(スペイン)"
             ],
             "programClub": "レアル・ソシエダ（スペイン）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/kubo_takefusa.json",
+            "fetchedAt": "2026-11-14T02:53:36.822Z"
           },
           "caps": 52,
           "goals": 7,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/kubo_takefusa.json",
+            "fetchedAt": "2026-11-14T02:53:36.822Z"
+          }
         },
         {
           "id": "suzuki_yuito",
@@ -48313,22 +48600,30 @@
             "weightKg": 71,
             "debut": "ミャンマー戦（2024年6月6日、FIFAワールドカップ26アジア2次予選兼AFCアジアカップサウジアラビア2027予選）",
             "career": [
-              "横浜F・マリノスプライマリー追浜",
+              "横浜Ｆ・マリノスプライマリー追浜",
               "葉山町立葉山中学校",
-              "船橋市立船橋高校",
+              "船橋市立船橋高等学校",
               "清水エスパルス",
-              "RCストラスブール（フランス）",
+              "RCストラスブール(フランス)",
               "清水エスパルス",
-              "ブレンビーIF（デンマーク）",
-              "SCフライブルク（ドイツ）"
+              "ブレンビーIF(デンマーク)",
+              "SCフライブルク(ドイツ)"
             ],
             "programClub": "SCフライブルク（ドイツ）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/suzuki_yuito.json",
+            "fetchedAt": "2026-11-14T02:53:36.782Z"
           },
           "caps": 8,
           "goals": 0,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/suzuki_yuito.json",
+            "fetchedAt": "2026-11-14T02:53:36.782Z"
+          }
         },
         {
           "id": "matsuki_kuryu",
@@ -48344,20 +48639,29 @@
             "weightKg": 78,
             "debut": "ウルグアイ戦（2026年9月24日、キリンチャレンジカップ2026）",
             "career": [
-              "室蘭大沢FC U-12",
-              "青森山田中学校",
-              "青森山田高校",
+              "室蘭⼤沢FC U-12",
+              "⻘森⼭⽥中学校",
+              "⻘森⼭⽥⾼校",
               "FC東京",
-              "ギョズテペ（トルコ）",
-              "サウサンプトンFC（イングランド）"
+              "サウサンプトンFC(イングランド)",
+              "ギョズテペSK(トルコ)",
+              "サウサンプトンFC(イングランド)"
             ],
             "programClub": "サウサンプトンFC（イングランド）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/matsuki_kuryu.json",
+            "fetchedAt": "2026-11-14T02:53:36.840Z"
           },
           "caps": 1,
           "goals": 1,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/matsuki_kuryu.json",
+            "fetchedAt": "2026-11-14T02:53:36.840Z"
+          }
         },
         {
           "id": "sano_kodai",
@@ -48378,23 +48682,58 @@
               "FC Viparte",
               "米子北高校",
               "ファジアーノ岡山",
-              "NECナイメヘン（オランダ）",
-              "PSVアイントホーフェン（オランダ）"
+              "NECナイメヘン(オランダ)",
+              "PSVアイントホーフェン(オランダ)"
             ],
             "programClub": "PSVアイントホーフェン（オランダ）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sano_kodai.json",
+            "fetchedAt": "2026-11-14T02:53:36.840Z"
           },
           "caps": 3,
           "goals": 0,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sano_kodai.json",
+            "fetchedAt": "2026-11-14T02:53:36.840Z"
+          }
         },
         {
           "id": "fukuda_shio",
           "name": "福田 師王",
           "position": "MF/FW",
           "club": "カールスルーエSC／ドイツ",
-          "url": "https://www.jfa.jp/samuraiblue/member/fukuda_shio.html"
+          "url": "https://www.jfa.jp/samuraiblue/member/fukuda_shio.html",
+          "statsSource": "https://www.jfa.jp/national_team/inc/member/samuraiblue/fukuda_shio.json",
+          "profile": {
+            "englishName": "FUKUDA Shio",
+            "birthDate": "2004-04-08",
+            "heightCm": 178,
+            "weightKg": 70,
+            "career": [
+              "チャレンジFC",
+              "大姶良サッカースポーツ少年団",
+              "高山FCサッカースポーツ少年団",
+              "神村学園",
+              "ボルシア・メンヘングラートバッハ(ドイツ)",
+              "カールスルーエSC(ドイツ)"
+            ],
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/fukuda_shio.json",
+            "fetchedAt": "2026-11-14T02:53:36.841Z"
+          },
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/fukuda_shio.json",
+            "fetchedAt": "2026-11-14T02:53:36.841Z"
+          },
+          "caps": 0,
+          "goals": 0,
+          "conceded": null,
+          "asOf": null,
+          "statsKind": "directory"
         },
         {
           "id": "goto_keisuke",
@@ -48414,17 +48753,25 @@
               "ジュビロ磐田U-15",
               "ジュビロ磐田U-18",
               "ジュビロ磐田",
-              "RSCアンデルレヒト（ベルギー）",
-              "シントトロイデンVV（ベルギー）",
-              "SCフライブルク（ドイツ）"
+              "RSCアンデルレヒト(ベルギー)",
+              "シントトロイデンVV(ベルギー)",
+              "SCフライブルク(ドイツ)"
             ],
             "programClub": "SCフライブルク（ドイツ）",
-            "asOf": "2026-09-29"
+            "asOf": "2026-09-29",
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/goto_keisuke.json",
+            "fetchedAt": "2026-11-14T02:53:36.845Z"
           },
           "caps": 6,
           "goals": 0,
           "conceded": null,
-          "asOf": "2026-09-29"
+          "asOf": "2026-09-29",
+          "statsSource": "https://op.jfa.jp/samuraiblue20261005/",
+          "profileStatus": {
+            "ok": true,
+            "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/goto_keisuke.json",
+            "fetchedAt": "2026-11-14T02:53:36.845Z"
+          }
         }
       ],
       "previous": {
@@ -48855,7 +49202,7 @@
       "statsAsOf": "2026-09-29"
     },
     "source": "https://www.jfa.jp/samuraiblue_2026/member/",
-    "fetchedAt": "2026-11-13T02:53:21.785Z"
+    "fetchedAt": "2026-11-14T02:53:36.845Z"
   },
   "baseballStarters": {
     "ok": true,

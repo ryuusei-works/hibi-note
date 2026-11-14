@@ -1,3 +1,4 @@
+import {preserveSquadProfiles} from '../lib/football-profiles.mjs';
 import {captureFifaHistory} from '../lib/enhancements.mjs';
 import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -40,6 +41,7 @@ export function captureDraftHistory(previous,current){
 export async function buildPages({collect=collectData,output=resolve('dist'),loadPrevious=readPrevious}={}){
   const previous=await loadPrevious(output);
   const data=await collect();
+  preserveSquadProfiles(previous,data);
   const sources=[data.standings,data.baseballGames,data.footballGames,data.fifa,...[data.baseballResults,data.footballHistory,data.footballSquad,data.baseballStarters,data.overseas].filter(Boolean),...Object.values(data.leaders).flatMap(v=>[v.c,v.p])];
   sources.push(...Object.values(data.draft?.clubs||{}).flatMap(club=>[club.bat,club.pit]));
   sources.push(...Object.values(data.daily?.newsCategories||{}),...[data.daily?.nationalNews,data.footballRivals].filter(Boolean),...Object.values(data.daily?.locations||{}).flatMap(location=>[location.news]),...(data.footballRivals?.ok?data.footballRivals.data.countries.map(country=>country.games):[]));

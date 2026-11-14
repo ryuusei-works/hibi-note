@@ -3637,7 +3637,7 @@ export function mountSports(scope) {
           ? profile.birthDate + (age !== null ? "（" + age + "歳）" : "")
           : "未取得",
       ],
-      ["出身地", profile.birthplace || "未取得"],
+      ["出身地", profile.birthplace || (p.profileStatus?.ok ? "JFA選手名鑑に掲載なし" : "未取得")],
       [
         "身長 / 体重",
         profile.heightCm != null || profile.weightKg != null
@@ -3663,7 +3663,7 @@ export function mountSports(scope) {
             ? "未取得"
             : p.goals + "得点",
       ],
-      ["日本代表デビュー", profile.debut || "未取得"],
+      ["日本代表デビュー", profile.debut || (p.profileStatus?.ok ? "JFA選手名鑑に掲載なし" : "未取得")],
       ["掲載招集メンバーの発表日", formatDate(squad.date) || "未取得"],
       ["前回からの掲載状況", selection],
     ];
@@ -3709,8 +3709,14 @@ export function mountSports(scope) {
           .join("")}</ul>`
       : `<p class="note">${!clubData ? "クラブの日程を取得できませんでした。" : !club?.matched ? "このクラブは日程データと照合できていません。" : "取得範囲内に今週の掲載試合はありません（未収録・取得失敗を含みます）。"}</p>`;
     const career = Array.isArray(profile.career) ? profile.career : [];
+    const statsNote = p.statsKind === "directory"
+      ? "代表成績：JFA選手名鑑の掲載値（成績の基準日は未掲載）。"
+      : `代表成績：${p.asOf || profile.asOf || "基準日未取得"}時点。`;
+    const profileNote = p.profileStatus?.ok === false
+      ? (profile.stale ? "選手名鑑の更新に失敗したため、前回取得したプロフィールを表示しています。次回更新で再試行します。" : "選手名鑑を取得できませんでした。次回更新で再試行します。")
+      : profile.source ? "基本情報・所属チーム歴はJFA選手名鑑の掲載値です。名鑑にない項目は公式プログラム掲載分を使用します。" : "プロフィールは公式プログラムの掲載値です。";
     $("soccer-player-body").innerHTML =
-      `${profile.englishName ? `<p class="profile-english">${esc(profile.englishName)}</p>` : ""}<section class="profile-section"><h3>基本プロフィール</h3>${soccerInfoGrid(basic)}</section><section class="profile-section"><h3>日本代表での情報</h3>${soccerInfoGrid(representative)}<p class="note">代表成績・プロフィール：${esc(p.asOf || profile.asOf || "基準日未取得")}時点。GKの失点数は得点数とは異なります。</p></section><section class="profile-section"><h3>所属クラブの情報</h3>${soccerInfoGrid(
+      `${profile.englishName ? `<p class="profile-english">${esc(profile.englishName)}</p>` : ""}<section class="profile-section"><h3>基本プロフィール</h3>${soccerInfoGrid(basic)}<p class="note">${esc(profileNote)}</p></section><section class="profile-section"><h3>日本代表での情報</h3>${soccerInfoGrid(representative)}<p class="note">${esc(statsNote)} GKの失点数は得点数とは異なります。</p></section><section class="profile-section"><h3>所属クラブの情報</h3>${soccerInfoGrid(
         [
           ["所属クラブ", clubName || "未取得"],
           ["国・地域", country],
@@ -3719,7 +3725,7 @@ export function mountSports(scope) {
             leagues.join("・") || "未取得（掲載試合なしを含む）",
           ],
         ],
-      )}<p class="note">所属：${esc(formatDate(squad.date || "日付未取得"))}のJFA掲載名簿を基準にしています。</p><h4>今週のクラブ日程・結果</h4>${clubData ? `<p class="note">${esc(formatDate(clubData.from))} 〜 ${esc(formatDate(clubData.to))} · J1・欧州主要12リーグの取得範囲内</p>` : ""}${fixtures}<p class="note">クラブ全体の日程・結果です。選手本人の出場・得点は含みません。カップ戦・一部リーグは対象外です。</p><details class="profile-career"><summary>これまでの所属チーム歴</summary>${career.length ? `<ol>${career.map((team) => `<li>${esc(team)}</li>`).join("")}</ol>` : '<p class="note">所属チーム歴は未取得です。</p>'}<p class="note">公式プログラム掲載時点の履歴です。</p></details></section><div class="profile-sources">${soccerSourceLink(p.url, "JFA選手紹介")}${soccerSourceLink(squad.statsSource, "プロフィール・代表成績の出典")}<p class="note">取得：${esc(stamp(data.footballSquad))}</p></div>`;
+      )}<p class="note">所属：${esc(formatDate(squad.date || "日付未取得"))}のJFA掲載名簿を基準にしています。</p><h4>今週のクラブ日程・結果</h4>${clubData ? `<p class="note">${esc(formatDate(clubData.from))} 〜 ${esc(formatDate(clubData.to))} · J1・欧州主要12リーグの取得範囲内</p>` : ""}${fixtures}<p class="note">クラブ全体の日程・結果です。選手本人の出場・得点は含みません。カップ戦・一部リーグは対象外です。</p><details class="profile-career"><summary>これまでの所属チーム歴</summary>${career.length ? `<ol>${career.map((team) => `<li>${esc(team)}</li>`).join("")}</ol>` : '<p class="note">所属チーム歴は未取得です。</p>'}<p class="note">JFA選手名鑑・公式プログラムの掲載履歴です。</p></details></section><div class="profile-sources">${soccerSourceLink(p.url, "JFA選手紹介")}${soccerSourceLink(profile.source, "JFA選手名鑑データ")}${soccerSourceLink(p.statsSource || squad.statsSource, "プロフィール・代表成績の出典")}<p class="note">取得：${esc(profile.fetchedAt ? formatDateTime(profile.fetchedAt) : stamp(data.footballSquad))}</p></div>`;
     openToolDialog("soccer-player-dialog");
   }
   scope.listen($("soccer-player-close"), "click", () =>

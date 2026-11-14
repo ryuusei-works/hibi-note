@@ -76,6 +76,24 @@ test("hydrates with Strict Mode, retains prior data, and supports settings, link
   w.HTMLCanvasElement.prototype.getContext = () => null;
   const newsRequests = [];
   const sportsPayload = structuredClone(snapshot);
+  const autoPlayer = sportsPayload.footballSquad.data.players.find(
+    (player) => player.position !== "GK",
+  );
+  Object.assign(autoPlayer, {
+    profile: {
+      englishName: "NEW Player",
+      birthDate: "2004-04-08",
+      heightCm: 178,
+      weightKg: 70,
+      career: ["ユース", "新しいクラブ"],
+      source: "https://www.jfa.jp/national_team/inc/member/samuraiblue/new_player.json",
+    },
+    profileStatus: { ok: true },
+    caps: 0,
+    goals: 0,
+    asOf: null,
+    statsKind: "directory",
+  });
   const liveDaily = structuredClone(snapshot.daily);
   liveDaily.nationalNews.fetchedAt = "2026-11-13T08:40:00.000Z";
   liveDaily.nationalNews.data[0].title = "RSS latest headline";
@@ -181,6 +199,16 @@ test("hydrates with Strict Mode, retains prior data, and supports settings, link
       $("carousel-content").textContent.includes("RSS latest headline"),
     );
     assert.ok($("carousel-updated").textContent.includes("17:40"));
+    w.document.querySelector(`[data-soccer-player="${autoPlayer.id}"]`).click();
+    const profileBody = $("soccer-player-body");
+    assert.ok(profileBody.textContent.includes("2004-04-08"));
+    assert.ok(profileBody.textContent.includes("178cm / 70kg"));
+    assert.ok(profileBody.textContent.includes("0試合"));
+    assert.ok(profileBody.textContent.includes("新しいクラブ"));
+    assert.ok(profileBody.textContent.includes("JFA選手名鑑に掲載なし"));
+    assert.ok(profileBody.textContent.includes("成績の基準日は未掲載"));
+    assert.ok(profileBody.querySelector('a[href="' + autoPlayer.profile.source + '"]'));
+    $("soccer-player-close").click();
     $("carousel-refresh").click();
     await new Promise((resolve) => setTimeout(resolve, 0));
     assert.equal(newsRequests.at(-1), "POST");
