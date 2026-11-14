@@ -4,6 +4,7 @@ import "./workspace.css";
 import "./mobile.css";
 import "./typography.css";
 import "./home-news.css";
+import "./player-profile.css";
 export const metadata: Metadata = {
   title: "HIBI SPORTS — 毎日の情報を、ひと目で。",
   description:

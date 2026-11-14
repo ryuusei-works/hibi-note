@@ -15,14 +15,19 @@ export function profileUrl(id){
   return `https://www.jfa.jp/national_team/inc/member/samuraiblue/${id}.json`;
 }
 
-export function parsePlayerProfile(payload,expectedName,today){
+export function parsePlayerProfile(payload,expectedName,today,id){
   const row=payload?.memberDescription;
   if(!row||!nameKey(row.name)||nameKey(row.name)!==nameKey(expectedName))throw Error('JFA player identity mismatch');
   const match=plain(row.birthday).match(/^(\d{4})[.\/-](\d{1,2})[.\/-](\d{1,2})$/);
   const date=match?`${match[1]}-${match[2].padStart(2,'0')}-${match[3].padStart(2,'0')}`:null;
   const birthDate=date&&date>='1900-01-01'&&date<=today&&Number.isFinite(Date.parse(date))&&new Date(date).toISOString().slice(0,10)===date?date:null;
+  let photoUrl=null;
+  try{
+    const url=new URL(row.photoURL);
+    if(/^[a-z]+(?:_[a-z]+)+$/.test(id||'')&&url.origin==='https://www.jfa.jp'&&!url.username&&!url.password&&!url.search&&!url.hash&&['jpg','jpeg','png','webp'].some(ext=>url.pathname===`/national_team/inc/member/samuraiblue/${id}.${ext}`))photoUrl=url.href;
+  }catch{}
   return {
-    profile:{englishName:plain(row.nameEng),birthDate,heightCm:number(row.height,80,250),weightKg:number(row.weight,20,200),career:plain(row.career).split(/[→⇒]/).map(v=>v.trim()).filter(Boolean)},
+    profile:{englishName:plain(row.nameEng),birthDate,heightCm:number(row.height,80,250),weightKg:number(row.weight,20,200),career:plain(row.career).split(/[→⇒]/).map(v=>v.trim()).filter(Boolean),photoUrl},
     caps:count(row.record?.gamesPlayed),
     // The registry's goals column is goals scored, never goalkeeper conceded goals.
     goals:row.position==='GK'?null:count(row.record?.goals),
@@ -37,7 +42,7 @@ export async function enrichSquadProfiles(players,getText,today){
       let source;
       try{
         source=profileUrl(player.id);
-        const next=parsePlayerProfile(JSON.parse(await getText(source)),player.name,today);
+        const next=parsePlayerProfile(JSON.parse(await getText(source)),player.name,today,player.id);
         const fetchedAt=new Date().toISOString();
         const fields=Object.fromEntries(Object.entries(next.profile).filter(([,value])=>present(value)));
         const profile={...player.profile,...fields,source,fetchedAt};

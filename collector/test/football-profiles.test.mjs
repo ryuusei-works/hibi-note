@@ -29,6 +29,17 @@ test('invalid, absent and goalkeeper values are never invented or interpreted as
   data.memberDescription.birthday='2099.01.01';assert.equal(parsePlayerProfile(data,'追加 選手',today).profile.birthDate,null);
 });
 
+test('photos must use the matching player image in the official JFA directory',()=>{
+  const data=payload();
+  const parse=()=>parsePlayerProfile(data,'追加 選手',today,'new_player').profile.photoUrl;
+  data.memberDescription.photoURL='https://www.jfa.jp/national_team/inc/member/samuraiblue/new_player.jpg';
+  assert.equal(parse(),data.memberDescription.photoURL);
+  for(const invalid of ['https://evil.test/new_player.jpg','javascript:alert(1)','https://www.jfa.jp/national_team/inc/member/samuraiblue/other_player.jpg','https://www.jfa.jp/national_team/inc/member/samuraiblue/new_player.jpg?tracker=1','https://www.jfa.jp/other/new_player.jpg','https://user:password@www.jfa.jp/national_team/inc/member/samuraiblue/new_player.jpg']){
+    data.memberDescription.photoURL=invalid;assert.equal(parse(),null);
+  }
+  delete data.memberDescription.photoURL;assert.equal(parse(),null);
+});
+
 test('automatically enriches each roster member with bounded requests and isolates individual failures',async()=>{
   const roster=Array.from({length:9},(_,i)=>({id:`new_${String.fromCharCode(97+i)}`,name:`選手 ${i}`,position:'MF/FW',club:'現在クラブ'}));
   roster[1]={...roster[1],caps:8,goals:2,asOf:'2026-10-01',statsSource:'https://op.jfa.jp/samuraiblue20261005/',profile:{birthplace:'公式出身地',debut:'公式デビュー',heightCm:180}};

@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
               "default-src 'self'",
               `script-src 'self' 'unsafe-inline'${development ? " 'unsafe-eval'" : ""}`,
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob:",
+              "img-src 'self' data: blob: https://www.jfa.jp/national_team/inc/member/samuraiblue/",
               `connect-src 'self'${development ? " ws:" : ""}`,
               "base-uri 'self'",
               "object-src 'none'",

@@ -46,7 +46,10 @@ test("all Next.js sections render as React markup without browser globals", () =
 
 test("hydrates with Strict Mode, retains prior data, and supports settings, links, news and backups", async (t) => {
   // The carousel only displays today's headlines; keep the fixture date stable.
-  t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-11-13T09:00:00Z") });
+  t.mock.timers.enable({
+    apis: ["Date"],
+    now: new Date("2026-11-13T09:00:00Z"),
+  });
   const element = React.createElement(
     StrictMode,
     null,
@@ -86,7 +89,9 @@ test("hydrates with Strict Mode, retains prior data, and supports settings, link
       heightCm: 178,
       weightKg: 70,
       career: ["ユース", "新しいクラブ"],
-      source: "https://www.jfa.jp/national_team/inc/member/samuraiblue/new_player.json",
+      source:
+        "https://www.jfa.jp/national_team/inc/member/samuraiblue/new_player.json",
+      photoUrl: `https://www.jfa.jp/national_team/inc/member/samuraiblue/${autoPlayer.id}.jpg`,
     },
     profileStatus: { ok: true },
     caps: 0,
@@ -94,6 +99,10 @@ test("hydrates with Strict Mode, retains prior data, and supports settings, link
     asOf: null,
     statsKind: "directory",
   });
+  const noPhotoPlayer = sportsPayload.footballSquad.data.players.find(
+    (player) => player.id !== autoPlayer.id,
+  );
+  noPhotoPlayer.profile = { ...noPhotoPlayer.profile, photoUrl: null };
   const liveDaily = structuredClone(snapshot.daily);
   liveDaily.nationalNews.fetchedAt = "2026-11-13T08:40:00.000Z";
   liveDaily.nationalNews.data[0].title = "RSS latest headline";
@@ -202,12 +211,58 @@ test("hydrates with Strict Mode, retains prior data, and supports settings, link
     w.document.querySelector(`[data-soccer-player="${autoPlayer.id}"]`).click();
     const profileBody = $("soccer-player-body");
     assert.ok(profileBody.textContent.includes("2004-04-08"));
-    assert.ok(profileBody.textContent.includes("178cm / 70kg"));
+    assert.ok(
+      profileBody
+        .querySelector(".player-profile-metrics")
+        .textContent.includes("178cm"),
+    );
+    assert.ok(
+      profileBody
+        .querySelector(".player-profile-metrics")
+        .textContent.includes("70kg"),
+    );
+    const portrait = profileBody.querySelector("[data-player-photo]");
+    assert.equal(portrait.src, autoPlayer.profile.photoUrl);
+    assert.ok(portrait.alt.includes(autoPlayer.name));
+    assert.equal(portrait.getAttribute("referrerpolicy"), "no-referrer");
+    assert.equal(
+      profileBody.querySelector(".player-photo-fallback").hidden,
+      true,
+    );
+    portrait.dispatchEvent(new w.Event("error"));
+    assert.equal(portrait.hidden, true);
+    assert.equal(
+      profileBody.querySelector(".player-photo-fallback").hidden,
+      false,
+    );
+    assert.ok(profileBody.textContent.includes("写真を表示できません"));
+    assert.ok(profileBody.textContent.includes("基本プロフィール"));
     assert.ok(profileBody.textContent.includes("0試合"));
     assert.ok(profileBody.textContent.includes("新しいクラブ"));
     assert.ok(profileBody.textContent.includes("JFA選手名鑑に掲載なし"));
     assert.ok(profileBody.textContent.includes("成績の基準日は未掲載"));
-    assert.ok(profileBody.querySelector('a[href="' + autoPlayer.profile.source + '"]'));
+    assert.ok(
+      profileBody.querySelector('a[href="' + autoPlayer.profile.source + '"]'),
+    );
+    $("soccer-player-close").click();
+    w.document.querySelector(`[data-soccer-player="${autoPlayer.id}"]`).click();
+    assert.equal(
+      $("soccer-player-body").querySelector("[data-player-photo]").hidden,
+      false,
+    );
+    $("soccer-player-close").click();
+    w.document
+      .querySelector(`[data-soccer-player="${noPhotoPlayer.id}"]`)
+      .click();
+    assert.equal(
+      $("soccer-player-body").querySelector("[data-player-photo]"),
+      null,
+    );
+    assert.equal(
+      $("soccer-player-body").querySelector(".player-photo-fallback").hidden,
+      false,
+    );
+    assert.ok($("soccer-player-body").textContent.includes("写真未掲載"));
     $("soccer-player-close").click();
     $("carousel-refresh").click();
     await new Promise((resolve) => setTimeout(resolve, 0));

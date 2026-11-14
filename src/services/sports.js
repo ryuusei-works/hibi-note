@@ -3618,10 +3618,30 @@ export function mountSports(scope) {
         (today.slice(5) < birthDate.slice(5) ? 1 : 0);
     return years >= 0 && years < 100 ? years : null;
   }
+  function soccerPhotoUrl(player) {
+    try {
+      const url = new URL(player.profile?.photoUrl);
+      return /^[a-z]+(?:_[a-z]+)+$/.test(player.id || "") &&
+        url.origin === "https://www.jfa.jp" &&
+        !url.username &&
+        !url.password &&
+        !url.search &&
+        !url.hash &&
+        ["jpg", "jpeg", "png", "webp"].some(
+          (ext) =>
+            url.pathname ===
+            `/national_team/inc/member/samuraiblue/${player.id}.${ext}`,
+        )
+        ? url.href
+        : null;
+    } catch {
+      return null;
+    }
+  }
   function showSoccerPlayer(id) {
     const p = soccerPlayers().find((p) => p.id === id);
     if (!p) return;
-    $("soccer-player-title").textContent = p.name;
+    $("soccer-player-title").textContent = "選手プロフィール";
     const profile = p.profile || {},
       squad = data.footballSquad.data,
       age = playerAge(profile.birthDate),
@@ -3630,19 +3650,11 @@ export function mountSports(scope) {
         (p.club || "").split("／")[1] ||
         (p.club ? "日本（国内所属）" : "未取得");
     const basic = [
-      ["ポジション", p.position],
+      ["生年月日", profile.birthDate || "未取得"],
       [
-        "生年月日",
-        profile.birthDate
-          ? profile.birthDate + (age !== null ? "（" + age + "歳）" : "")
-          : "未取得",
-      ],
-      ["出身地", profile.birthplace || (p.profileStatus?.ok ? "JFA選手名鑑に掲載なし" : "未取得")],
-      [
-        "身長 / 体重",
-        profile.heightCm != null || profile.weightKg != null
-          ? `${profile.heightCm ?? "—"}cm / ${profile.weightKg ?? "—"}kg`
-          : "未取得",
+        "出身地",
+        profile.birthplace ||
+          (p.profileStatus?.ok ? "JFA選手名鑑に掲載なし" : "未取得"),
       ],
     ];
     const previous = squad.previous?.players,
@@ -3663,7 +3675,11 @@ export function mountSports(scope) {
             ? "未取得"
             : p.goals + "得点",
       ],
-      ["日本代表デビュー", profile.debut || (p.profileStatus?.ok ? "JFA選手名鑑に掲載なし" : "未取得")],
+      [
+        "日本代表デビュー",
+        profile.debut ||
+          (p.profileStatus?.ok ? "JFA選手名鑑に掲載なし" : "未取得"),
+      ],
       ["掲載招集メンバーの発表日", formatDate(squad.date) || "未取得"],
       ["前回からの掲載状況", selection],
     ];
@@ -3709,14 +3725,41 @@ export function mountSports(scope) {
           .join("")}</ul>`
       : `<p class="note">${!clubData ? "クラブの日程を取得できませんでした。" : !club?.matched ? "このクラブは日程データと照合できていません。" : "取得範囲内に今週の掲載試合はありません（未収録・取得失敗を含みます）。"}</p>`;
     const career = Array.isArray(profile.career) ? profile.career : [];
-    const statsNote = p.statsKind === "directory"
-      ? "代表成績：JFA選手名鑑の掲載値（成績の基準日は未掲載）。"
-      : `代表成績：${p.asOf || profile.asOf || "基準日未取得"}時点。`;
-    const profileNote = p.profileStatus?.ok === false
-      ? (profile.stale ? "選手名鑑の更新に失敗したため、前回取得したプロフィールを表示しています。次回更新で再試行します。" : "選手名鑑を取得できませんでした。次回更新で再試行します。")
-      : profile.source ? "基本情報・所属チーム歴はJFA選手名鑑の掲載値です。名鑑にない項目は公式プログラム掲載分を使用します。" : "プロフィールは公式プログラムの掲載値です。";
+    const statsNote =
+      p.statsKind === "directory"
+        ? "代表成績：JFA選手名鑑の掲載値（成績の基準日は未掲載）。"
+        : `代表成績：${p.asOf || profile.asOf || "基準日未取得"}時点。`;
+    const profileNote =
+      p.profileStatus?.ok === false
+        ? profile.stale
+          ? "選手名鑑の更新に失敗したため、前回取得したプロフィールを表示しています。次回更新で再試行します。"
+          : "選手名鑑を取得できませんでした。次回更新で再試行します。"
+        : profile.source
+          ? "基本情報・所属チーム歴はJFA選手名鑑の掲載値です。名鑑にない項目は公式プログラム掲載分を使用します。"
+          : "プロフィールは公式プログラムの掲載値です。";
+    const photo = soccerPhotoUrl(p);
+    const hero = `<section class="player-profile-hero" aria-labelledby="soccer-player-name">
+      <figure class="player-profile-photo">
+        <div class="player-portrait">
+          ${photo ? `<img data-player-photo src="${esc(photo)}" alt="${esc(p.name)}の選手写真" width="170" height="200" decoding="async" referrerpolicy="no-referrer">` : ""}
+          <div class="player-photo-fallback" ${photo ? "hidden" : ""}><svg viewBox="0 0 80 80" aria-hidden="true" focusable="false"><circle cx="40" cy="27" r="14"/><path d="M13 74c0-19 11-30 27-30s27 11 27 30"/></svg><span>写真未掲載</span></div>
+        </div>
+        <figcaption>${photo ? soccerSourceLink(p.url, "写真：JFA公式 ↗") : "JFA選手名鑑"}</figcaption>
+      </figure>
+      <div class="player-profile-identity">
+        <div class="player-profile-kicker"><span>SAMURAI BLUE</span><span class="player-position">${esc(p.position || "—")}</span></div>
+        <h3 id="soccer-player-name">${esc(p.name)}</h3>
+        ${profile.englishName ? `<p class="profile-english">${esc(profile.englishName)}</p>` : ""}
+        <p class="player-profile-club">${esc(clubName || "所属未取得")}<small>${esc(country)}</small></p>
+        <dl class="player-profile-metrics">
+          <div><dt>年齢</dt><dd>${age !== null ? `${age}<small>歳</small>` : "—"}</dd></div>
+          <div><dt>身長</dt><dd>${profile.heightCm != null ? `${esc(profile.heightCm)}<small>cm</small>` : "—"}</dd></div>
+          <div><dt>体重</dt><dd>${profile.weightKg != null ? `${esc(profile.weightKg)}<small>kg</small>` : "—"}</dd></div>
+        </dl>
+      </div>
+    </section>`;
     $("soccer-player-body").innerHTML =
-      `${profile.englishName ? `<p class="profile-english">${esc(profile.englishName)}</p>` : ""}<section class="profile-section"><h3>基本プロフィール</h3>${soccerInfoGrid(basic)}<p class="note">${esc(profileNote)}</p></section><section class="profile-section"><h3>日本代表での情報</h3>${soccerInfoGrid(representative)}<p class="note">${esc(statsNote)} GKの失点数は得点数とは異なります。</p></section><section class="profile-section"><h3>所属クラブの情報</h3>${soccerInfoGrid(
+      `${hero}<section class="profile-section"><h3>基本プロフィール</h3>${soccerInfoGrid(basic)}</section><section class="profile-section"><h3>日本代表での情報</h3>${soccerInfoGrid(representative)}<p class="note">${esc(statsNote)} GKの失点数は得点数とは異なります。</p></section><section class="profile-section"><h3>所属クラブの情報</h3>${soccerInfoGrid(
         [
           ["所属クラブ", clubName || "未取得"],
           ["国・地域", country],
@@ -3725,11 +3768,26 @@ export function mountSports(scope) {
             leagues.join("・") || "未取得（掲載試合なしを含む）",
           ],
         ],
-      )}<p class="note">所属：${esc(formatDate(squad.date || "日付未取得"))}のJFA掲載名簿を基準にしています。</p><h4>今週のクラブ日程・結果</h4>${clubData ? `<p class="note">${esc(formatDate(clubData.from))} 〜 ${esc(formatDate(clubData.to))} · J1・欧州主要12リーグの取得範囲内</p>` : ""}${fixtures}<p class="note">クラブ全体の日程・結果です。選手本人の出場・得点は含みません。カップ戦・一部リーグは対象外です。</p><details class="profile-career"><summary>これまでの所属チーム歴</summary>${career.length ? `<ol>${career.map((team) => `<li>${esc(team)}</li>`).join("")}</ol>` : '<p class="note">所属チーム歴は未取得です。</p>'}<p class="note">JFA選手名鑑・公式プログラムの掲載履歴です。</p></details></section><div class="profile-sources">${soccerSourceLink(p.url, "JFA選手紹介")}${soccerSourceLink(profile.source, "JFA選手名鑑データ")}${soccerSourceLink(p.statsSource || squad.statsSource, "プロフィール・代表成績の出典")}<p class="note">取得：${esc(profile.fetchedAt ? formatDateTime(profile.fetchedAt) : stamp(data.footballSquad))}</p></div>`;
+      )}<p class="note">所属：${esc(formatDate(squad.date || "日付未取得"))}のJFA掲載名簿を基準にしています。</p><h4>今週のクラブ日程・結果</h4>${clubData ? `<p class="note">${esc(formatDate(clubData.from))} 〜 ${esc(formatDate(clubData.to))} · J1・欧州主要12リーグの取得範囲内</p>` : ""}${fixtures}<p class="note">クラブ全体の日程・結果です。選手本人の出場・得点は含みません。カップ戦・一部リーグは対象外です。</p><details class="profile-career"><summary>これまでの所属チーム歴</summary>${career.length ? `<ol>${career.map((team) => `<li>${esc(team)}</li>`).join("")}</ol>` : '<p class="note">所属チーム歴は未取得です。</p>'}<p class="note">JFA選手名鑑・公式プログラムの掲載履歴です。</p></details></section><details class="player-profile-provenance"><summary>情報の出典・取得状況</summary><p class="note">${esc(profileNote)}</p><div class="profile-sources">${soccerSourceLink(p.url, "JFA選手紹介")}${soccerSourceLink(profile.source, "JFA選手名鑑データ")}${soccerSourceLink(p.statsSource || squad.statsSource, "プロフィール・代表成績の出典")}<p class="note">取得：${esc(profile.fetchedAt ? formatDateTime(profile.fetchedAt) : stamp(data.footballSquad))}</p></div></details>`;
     openToolDialog("soccer-player-dialog");
   }
   scope.listen($("soccer-player-close"), "click", () =>
     closeToolDialog("soccer-player-dialog"),
+  );
+  scope.listen(
+    $("soccer-player-body"),
+    "error",
+    (event) => {
+      const image = event.target;
+      if (!image?.matches?.("[data-player-photo]")) return;
+      image.hidden = true;
+      const fallback = image.parentElement.querySelector(
+        ".player-photo-fallback",
+      );
+      fallback.hidden = false;
+      fallback.querySelector("span").textContent = "写真を表示できません";
+    },
+    true,
   );
   scope.listen($("soccer-player-dialog"), "cancel", (event) => {
     event.preventDefault();

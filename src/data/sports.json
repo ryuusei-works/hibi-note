@@ -47725,8 +47725,9 @@
             ],
             "programClub": "鹿島アントラーズ",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/hayakawa_tomoki.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/hayakawa_tomoki.json",
-            "fetchedAt": "2026-11-14T02:53:36.515Z"
+            "fetchedAt": "2026-11-14T03:03:35.866Z"
           },
           "caps": 5,
           "goals": null,
@@ -47736,7 +47737,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/hayakawa_tomoki.json",
-            "fetchedAt": "2026-11-14T02:53:36.515Z"
+            "fetchedAt": "2026-11-14T03:03:35.866Z"
           }
         },
         {
@@ -47764,8 +47765,9 @@
             ],
             "programClub": "シントトロイデンVV（ベルギー）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/kokubo_leo_brian.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/kokubo_leo_brian.json",
-            "fetchedAt": "2026-11-14T02:53:36.509Z"
+            "fetchedAt": "2026-11-14T03:03:35.868Z"
           },
           "caps": 1,
           "goals": null,
@@ -47775,7 +47777,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/kokubo_leo_brian.json",
-            "fetchedAt": "2026-11-14T02:53:36.509Z"
+            "fetchedAt": "2026-11-14T03:03:35.868Z"
           }
         },
         {
@@ -47803,8 +47805,9 @@
             ],
             "programClub": "アストン・ビラ（イングランド）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/suzuki_zion.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/suzuki_zion.json",
-            "fetchedAt": "2026-11-14T02:53:36.539Z"
+            "fetchedAt": "2026-11-14T03:03:35.929Z"
           },
           "caps": 29,
           "goals": null,
@@ -47814,7 +47817,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/suzuki_zion.json",
-            "fetchedAt": "2026-11-14T02:53:36.539Z"
+            "fetchedAt": "2026-11-14T03:03:35.929Z"
           }
         },
         {
@@ -47846,8 +47849,9 @@
             ],
             "programClub": "ボルシア・メンヘングラートバッハ（ドイツ）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/itakura_kou.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/itakura_kou.json",
-            "fetchedAt": "2026-11-14T02:53:36.554Z"
+            "fetchedAt": "2026-11-14T03:03:35.954Z"
           },
           "caps": 43,
           "goals": 2,
@@ -47857,7 +47861,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/itakura_kou.json",
-            "fetchedAt": "2026-11-14T02:53:36.554Z"
+            "fetchedAt": "2026-11-14T03:03:35.954Z"
           }
         },
         {
@@ -47885,8 +47889,9 @@
             ],
             "programClub": "フェイエノールト（オランダ）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/watanabe_tsuyoshi.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/watanabe_tsuyoshi.json",
-            "fetchedAt": "2026-11-14T02:53:36.581Z"
+            "fetchedAt": "2026-11-14T03:03:35.974Z"
           },
           "caps": 14,
           "goals": 0,
@@ -47896,7 +47901,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/watanabe_tsuyoshi.json",
-            "fetchedAt": "2026-11-14T02:53:36.581Z"
+            "fetchedAt": "2026-11-14T03:03:35.974Z"
           }
         },
         {
@@ -47919,13 +47924,14 @@
               "ユニオン・サンジロワーズ(ベルギー)",
               "TSGホッフェンハイム(ドイツ)"
             ],
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/machida_koki.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/machida_koki.json",
-            "fetchedAt": "2026-11-14T02:53:36.579Z"
+            "fetchedAt": "2026-11-14T03:03:35.985Z"
           },
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/machida_koki.json",
-            "fetchedAt": "2026-11-14T02:53:36.579Z"
+            "fetchedAt": "2026-11-14T03:03:35.985Z"
           },
           "caps": 17,
           "goals": 0,
@@ -47959,8 +47965,9 @@
             ],
             "programClub": "バイエルン・ミュンヘン（ドイツ）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/ito_hiroki.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/ito_hiroki.json",
-            "fetchedAt": "2026-11-14T02:53:36.591Z"
+            "fetchedAt": "2026-11-14T03:03:35.976Z"
           },
           "caps": 30,
           "goals": 1,
@@ -47970,7 +47977,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/ito_hiroki.json",
-            "fetchedAt": "2026-11-14T02:53:36.591Z"
+            "fetchedAt": "2026-11-14T03:03:35.976Z"
           }
         },
         {
@@ -47996,8 +48003,9 @@
             ],
             "programClub": "ル・アーヴルAC（フランス）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/seko_ayumu.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/seko_ayumu.json",
-            "fetchedAt": "2026-11-14T02:53:36.618Z"
+            "fetchedAt": "2026-11-14T03:03:36.035Z"
           },
           "caps": 18,
           "goals": 0,
@@ -48007,7 +48015,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/seko_ayumu.json",
-            "fetchedAt": "2026-11-14T02:53:36.618Z"
+            "fetchedAt": "2026-11-14T03:03:36.035Z"
           }
         },
         {
@@ -48032,8 +48040,9 @@
             ],
             "programClub": "サンフレッチェ広島",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/nakano_shuto.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/nakano_shuto.json",
-            "fetchedAt": "2026-11-14T02:53:36.636Z"
+            "fetchedAt": "2026-11-14T03:03:36.053Z"
           },
           "caps": 1,
           "goals": 0,
@@ -48043,7 +48052,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/nakano_shuto.json",
-            "fetchedAt": "2026-11-14T02:53:36.636Z"
+            "fetchedAt": "2026-11-14T03:03:36.053Z"
           }
         },
         {
@@ -48068,13 +48077,14 @@
               "ヴェルダー・ブレーメン(ドイツ)",
               "カリャリ・カルチョ(イタリア)"
             ],
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sugawara_yukinari.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sugawara_yukinari.json",
-            "fetchedAt": "2026-11-14T02:53:36.657Z"
+            "fetchedAt": "2026-11-14T03:03:36.075Z"
           },
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sugawara_yukinari.json",
-            "fetchedAt": "2026-11-14T02:53:36.657Z"
+            "fetchedAt": "2026-11-14T03:03:36.075Z"
           },
           "caps": 25,
           "goals": 2,
@@ -48104,8 +48114,9 @@
             ],
             "programClub": "FCコペンハーゲン（デンマーク）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/suzuki_junnosuke.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/suzuki_junnosuke.json",
-            "fetchedAt": "2026-11-14T02:53:36.640Z"
+            "fetchedAt": "2026-11-14T03:03:36.057Z"
           },
           "caps": 10,
           "goals": 0,
@@ -48115,7 +48126,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/suzuki_junnosuke.json",
-            "fetchedAt": "2026-11-14T02:53:36.640Z"
+            "fetchedAt": "2026-11-14T03:03:36.057Z"
           }
         },
         {
@@ -48142,8 +48153,9 @@
             ],
             "programClub": "KRCゲンク（ベルギー）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/ito_junya.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/ito_junya.json",
-            "fetchedAt": "2026-11-14T02:53:36.652Z"
+            "fetchedAt": "2026-11-14T03:03:36.113Z"
           },
           "caps": 75,
           "goals": 16,
@@ -48153,7 +48165,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/ito_junya.json",
-            "fetchedAt": "2026-11-14T02:53:36.652Z"
+            "fetchedAt": "2026-11-14T03:03:36.113Z"
           }
         },
         {
@@ -48179,13 +48191,14 @@
               "リバプールFC(イングランド)",
               "ASモナコ(フランス)"
             ],
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/minamino_takumi.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/minamino_takumi.json",
-            "fetchedAt": "2026-11-14T02:53:36.714Z"
+            "fetchedAt": "2026-11-14T03:03:36.167Z"
           },
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/minamino_takumi.json",
-            "fetchedAt": "2026-11-14T02:53:36.714Z"
+            "fetchedAt": "2026-11-14T03:03:36.167Z"
           },
           "caps": 73,
           "goals": 26,
@@ -48217,8 +48230,9 @@
             ],
             "programClub": "クリスタル・パレス（イングランド）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/kamada_daichi.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/kamada_daichi.json",
-            "fetchedAt": "2026-11-14T02:53:36.722Z"
+            "fetchedAt": "2026-11-14T03:03:36.165Z"
           },
           "caps": 55,
           "goals": 14,
@@ -48228,7 +48242,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/kamada_daichi.json",
-            "fetchedAt": "2026-11-14T02:53:36.722Z"
+            "fetchedAt": "2026-11-14T03:03:36.165Z"
           }
         },
         {
@@ -48253,13 +48267,14 @@
               "オーステンデ(ベルギー)",
               "コベントリー・シティ(イングランド)"
             ],
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sakamoto_tatsuhiro.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sakamoto_tatsuhiro.json",
-            "fetchedAt": "2026-11-14T02:53:36.677Z"
+            "fetchedAt": "2026-11-14T03:03:36.132Z"
           },
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sakamoto_tatsuhiro.json",
-            "fetchedAt": "2026-11-14T02:53:36.677Z"
+            "fetchedAt": "2026-11-14T03:03:36.132Z"
           },
           "caps": 2,
           "goals": 0,
@@ -48294,8 +48309,9 @@
             ],
             "programClub": "FC町田ゼルビア",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/soma_yuki.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/soma_yuki.json",
-            "fetchedAt": "2026-11-14T02:53:36.693Z"
+            "fetchedAt": "2026-11-14T03:03:36.140Z"
           },
           "caps": 21,
           "goals": 5,
@@ -48305,7 +48321,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/soma_yuki.json",
-            "fetchedAt": "2026-11-14T02:53:36.693Z"
+            "fetchedAt": "2026-11-14T03:03:36.140Z"
           }
         },
         {
@@ -48331,13 +48347,14 @@
               "NECナイメヘン（オランダ）",
               "FC町田ゼルビア"
             ],
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/ogawa_koki.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/ogawa_koki.json",
-            "fetchedAt": "2026-11-14T02:53:36.752Z"
+            "fetchedAt": "2026-11-14T03:03:36.197Z"
           },
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/ogawa_koki.json",
-            "fetchedAt": "2026-11-14T02:53:36.752Z"
+            "fetchedAt": "2026-11-14T03:03:36.197Z"
           },
           "caps": 18,
           "goals": 11,
@@ -48372,8 +48389,9 @@
             ],
             "programClub": "イプスウィッチ・タウン（イングランド）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/maeda_daizen.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/maeda_daizen.json",
-            "fetchedAt": "2026-11-14T02:53:36.757Z"
+            "fetchedAt": "2026-11-14T03:03:36.196Z"
           },
           "caps": 31,
           "goals": 5,
@@ -48383,7 +48401,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/maeda_daizen.json",
-            "fetchedAt": "2026-11-14T02:53:36.757Z"
+            "fetchedAt": "2026-11-14T03:03:36.196Z"
           }
         },
         {
@@ -48414,8 +48432,9 @@
             ],
             "programClub": "アイントラハト・フランクフルト（ドイツ）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/doan_ritsu.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/doan_ritsu.json",
-            "fetchedAt": "2026-11-14T02:53:36.741Z"
+            "fetchedAt": "2026-11-14T03:03:36.275Z"
           },
           "caps": 71,
           "goals": 11,
@@ -48425,7 +48444,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/doan_ritsu.json",
-            "fetchedAt": "2026-11-14T02:53:36.741Z"
+            "fetchedAt": "2026-11-14T03:03:36.275Z"
           }
         },
         {
@@ -48451,8 +48470,9 @@
             ],
             "programClub": "リーズ・ユナイテッド（イングランド）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/tanaka_ao.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/tanaka_ao.json",
-            "fetchedAt": "2026-11-14T02:53:36.764Z"
+            "fetchedAt": "2026-11-14T03:03:36.193Z"
           },
           "caps": 43,
           "goals": 8,
@@ -48462,7 +48482,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/tanaka_ao.json",
-            "fetchedAt": "2026-11-14T02:53:36.764Z"
+            "fetchedAt": "2026-11-14T03:03:36.193Z"
           }
         },
         {
@@ -48494,8 +48514,9 @@
             ],
             "programClub": "オリンピック・リヨン（フランス）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/nakamura_keito.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/nakamura_keito.json",
-            "fetchedAt": "2026-11-14T02:53:36.790Z"
+            "fetchedAt": "2026-11-14T03:03:36.317Z"
           },
           "caps": 31,
           "goals": 11,
@@ -48505,7 +48526,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/nakamura_keito.json",
-            "fetchedAt": "2026-11-14T02:53:36.790Z"
+            "fetchedAt": "2026-11-14T03:03:36.317Z"
           }
         },
         {
@@ -48528,8 +48549,9 @@
             ],
             "programClub": "マインツ05（ドイツ）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sano_kaishu.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sano_kaishu.json",
-            "fetchedAt": "2026-11-14T02:53:36.782Z"
+            "fetchedAt": "2026-11-14T03:03:36.304Z"
           },
           "caps": 17,
           "goals": 1,
@@ -48539,7 +48561,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sano_kaishu.json",
-            "fetchedAt": "2026-11-14T02:53:36.782Z"
+            "fetchedAt": "2026-11-14T03:03:36.304Z"
           }
         },
         {
@@ -48572,8 +48594,9 @@
             ],
             "programClub": "レアル・ソシエダ（スペイン）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/kubo_takefusa.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/kubo_takefusa.json",
-            "fetchedAt": "2026-11-14T02:53:36.822Z"
+            "fetchedAt": "2026-11-14T03:03:36.322Z"
           },
           "caps": 52,
           "goals": 7,
@@ -48583,7 +48606,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/kubo_takefusa.json",
-            "fetchedAt": "2026-11-14T02:53:36.822Z"
+            "fetchedAt": "2026-11-14T03:03:36.322Z"
           }
         },
         {
@@ -48611,8 +48634,9 @@
             ],
             "programClub": "SCフライブルク（ドイツ）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/suzuki_yuito.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/suzuki_yuito.json",
-            "fetchedAt": "2026-11-14T02:53:36.782Z"
+            "fetchedAt": "2026-11-14T03:03:36.295Z"
           },
           "caps": 8,
           "goals": 0,
@@ -48622,7 +48646,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/suzuki_yuito.json",
-            "fetchedAt": "2026-11-14T02:53:36.782Z"
+            "fetchedAt": "2026-11-14T03:03:36.295Z"
           }
         },
         {
@@ -48649,8 +48673,9 @@
             ],
             "programClub": "サウサンプトンFC（イングランド）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/matsuki_kuryu.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/matsuki_kuryu.json",
-            "fetchedAt": "2026-11-14T02:53:36.840Z"
+            "fetchedAt": "2026-11-14T03:03:36.340Z"
           },
           "caps": 1,
           "goals": 1,
@@ -48660,7 +48685,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/matsuki_kuryu.json",
-            "fetchedAt": "2026-11-14T02:53:36.840Z"
+            "fetchedAt": "2026-11-14T03:03:36.340Z"
           }
         },
         {
@@ -48687,8 +48712,9 @@
             ],
             "programClub": "PSVアイントホーフェン（オランダ）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sano_kodai.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sano_kodai.json",
-            "fetchedAt": "2026-11-14T02:53:36.840Z"
+            "fetchedAt": "2026-11-14T03:03:36.350Z"
           },
           "caps": 3,
           "goals": 0,
@@ -48698,7 +48724,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/sano_kodai.json",
-            "fetchedAt": "2026-11-14T02:53:36.840Z"
+            "fetchedAt": "2026-11-14T03:03:36.350Z"
           }
         },
         {
@@ -48721,13 +48747,14 @@
               "ボルシア・メンヘングラートバッハ(ドイツ)",
               "カールスルーエSC(ドイツ)"
             ],
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/fukuda_shio.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/fukuda_shio.json",
-            "fetchedAt": "2026-11-14T02:53:36.841Z"
+            "fetchedAt": "2026-11-14T03:03:36.340Z"
           },
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/fukuda_shio.json",
-            "fetchedAt": "2026-11-14T02:53:36.841Z"
+            "fetchedAt": "2026-11-14T03:03:36.340Z"
           },
           "caps": 0,
           "goals": 0,
@@ -48759,8 +48786,9 @@
             ],
             "programClub": "SCフライブルク（ドイツ）",
             "asOf": "2026-09-29",
+            "photoUrl": "https://www.jfa.jp/national_team/inc/member/samuraiblue/goto_keisuke.jpg",
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/goto_keisuke.json",
-            "fetchedAt": "2026-11-14T02:53:36.845Z"
+            "fetchedAt": "2026-11-14T03:03:36.350Z"
           },
           "caps": 6,
           "goals": 0,
@@ -48770,7 +48798,7 @@
           "profileStatus": {
             "ok": true,
             "source": "https://www.jfa.jp/national_team/inc/member/samuraiblue/goto_keisuke.json",
-            "fetchedAt": "2026-11-14T02:53:36.845Z"
+            "fetchedAt": "2026-11-14T03:03:36.350Z"
           }
         }
       ],
@@ -49202,7 +49230,7 @@
       "statsAsOf": "2026-09-29"
     },
     "source": "https://www.jfa.jp/samuraiblue_2026/member/",
-    "fetchedAt": "2026-11-14T02:53:36.845Z"
+    "fetchedAt": "2026-11-14T03:03:36.350Z"
   },
   "baseballStarters": {
     "ok": true,

@@ -1,0 +1,272 @@
+#soccer-player-dialog {
+  width: min(820px, calc(100% - 24px));
+  background: var(--surface);
+}
+#soccer-player-dialog .dialog-heading {
+  position: sticky;
+  top: -24px;
+  z-index: 2;
+  padding: 10px 0 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.player-profile-hero {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  align-items: center;
+  gap: 28px;
+  padding: 24px;
+  margin-top: 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--soft), var(--surface) 65%);
+}
+.player-profile-photo {
+  margin: 0;
+  min-width: 0;
+}
+.player-portrait {
+  aspect-ratio: 17 / 20;
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+}
+.player-portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+.player-portrait [hidden] {
+  display: none;
+}
+.player-photo-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
+  padding: 8px;
+}
+.player-photo-fallback svg {
+  width: 60%;
+  max-width: 80px;
+  fill: var(--soft);
+  stroke: var(--muted);
+  stroke-width: 1.5;
+}
+.player-profile-photo figcaption {
+  margin-top: 10px;
+  font-size: 11px;
+  text-align: center;
+  line-height: 1.6;
+}
+.player-profile-photo a {
+  color: var(--accent-strong);
+  text-decoration: none;
+}
+.player-profile-photo a:hover {
+  text-decoration: underline;
+}
+.player-profile-identity {
+  min-width: 0;
+}
+.player-profile-kicker {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  color: var(--accent-strong);
+}
+.player-position {
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: var(--soft);
+  letter-spacing: 0.5px;
+}
+.player-profile-identity h3 {
+  margin: 12px 0 6px;
+  font-size: clamp(22px, 3vw, 30px);
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  overflow-wrap: anywhere;
+}
+.player-profile-identity .profile-english {
+  margin: 0 0 14px;
+  font-size: 11px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+.player-profile-club {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.player-profile-club small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+.player-profile-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0 0;
+}
+.player-profile-metrics > div {
+  min-width: 0;
+  border-left: 1px solid var(--line);
+  padding-left: 12px;
+}
+.player-profile-metrics > div:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+.player-profile-metrics dt {
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+.player-profile-metrics dd {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.player-profile-metrics dd small {
+  font-size: 11px;
+  margin-left: 4px;
+  font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0;
+}
+#soccer-player-body .profile-section {
+  padding-top: 20px;
+  margin-top: 24px;
+}
+#soccer-player-body .profile-section h3 {
+  font-size: 15px;
+}
+#soccer-player-body .profile-grid {
+  gap: 8px 24px;
+}
+#soccer-player-body .profile-grid > div {
+  padding: 12px 0;
+}
+#soccer-player-body .profile-grid dt {
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+#soccer-player-body .profile-grid dd {
+  font-size: 14px;
+  font-weight: 500;
+}
+.player-profile-provenance {
+  border-top: 1px solid var(--line);
+  margin-top: 24px;
+  padding-top: 16px;
+}
+.player-profile-provenance summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 6px 0;
+}
+.player-profile-provenance .profile-sources {
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 12px;
+}
+@media (max-width: 640px) {
+  #soccer-player-dialog .dialog-heading {
+    top: -18px;
+  }
+  .player-profile-hero {
+    grid-template-columns: 104px minmax(0, 1fr);
+    gap: 18px;
+    padding: 16px;
+    align-items: start;
+  }
+  .player-profile-identity h3 {
+    font-size: 21px;
+    margin-top: 8px;
+  }
+  .player-profile-kicker {
+    gap: 6px;
+    font-size: 8px;
+    letter-spacing: 0.6px;
+  }
+  .player-position {
+    font-size: 10px;
+  }
+  .player-profile-identity .profile-english {
+    font-size: 10px;
+    margin-bottom: 10px;
+  }
+  .player-profile-club {
+    font-size: 12px;
+  }
+  .player-profile-metrics {
+    gap: 6px;
+    margin-top: 14px;
+  }
+  .player-profile-metrics > div {
+    padding-left: 6px;
+  }
+  .player-profile-metrics dd {
+    font-size: 24px;
+  }
+  .player-profile-metrics dd small {
+    margin-left: 2px;
+    font-size: 9px;
+  }
+  .player-profile-metrics dt {
+    font-size: 10px;
+  }
+  #soccer-player-body .profile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 16px;
+  }
+}
+@media (max-width: 380px) {
+  .player-profile-hero {
+    grid-template-columns: 80px minmax(0, 1fr);
+    padding: 12px;
+    gap: 12px;
+  }
+  .player-profile-identity h3 {
+    font-size: 18px;
+  }
+  .player-profile-metrics dd {
+    font-size: 20px;
+  }
+  .player-profile-metrics {
+    gap: 4px;
+  }
+  .player-profile-metrics > div {
+    padding-left: 4px;
+  }
+  .player-profile-photo figcaption {
+    font-size: 10px;
+  }
+  #soccer-player-body .profile-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
