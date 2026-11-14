@@ -82,3 +82,35 @@ test('a newly called-up squad is enriched even when no completed-match program e
   assert.equal(result.footballSquad.data.players.length,11);
   assert.ok(result.footballSquad.data.players.every(p=>p.profile.birthDate==='2004-04-08'&&p.caps===0));
 });
+
+test('comparison profiles include previous-only players and fetch shared players once while preserving roster-specific clubs',async()=>{
+  const current=Array.from({length:11},(_,i)=>({id:`new_${String.fromCharCode(97+i)}`,name:`選手 ${i}`}));
+  const previous=[...current.slice(0,10),{id:'former_player',name:'前回 選手'}];
+  const requests=[];
+  const markup=(players,club)=>'<div class="section-block"><h4>MF/FW</h4><div class="competition-member">'+players.map(p=>`<a href="/samuraiblue/member/${p.id}.html"><span class="name">${p.name}</span><span class="status">${club}</span></a>`).join('')+'</div></div>';
+  const result=await collectEnhancements(async url=>{
+    if(url.includes('/samuraiblue_2026/member/'))return '<table><tr><td>11/10</td><td><a href="/samuraiblue/current/member.html">招集メンバー</a></td></tr><tr><td>9/20</td><td><a href="/samuraiblue/prior/member.html">招集メンバー</a></td></tr></table>';
+    if(url.includes('/current/member.html'))return markup(current,'現在クラブ');
+    if(url.includes('/prior/member.html'))return markup(previous,'前回クラブ');
+    const p=[...current,...previous].find(p=>profileUrl(p.id)===url);
+    if(p){requests.push(url);return JSON.stringify(payload(p.name));}
+    throw Error('Unavailable');
+  },{today,year:2026,footballGames:{ok:true,data:[]}});
+  assert.equal(result.footballSquad.ok,true);
+  const squad=result.footballSquad.data;
+  assert.equal(requests.length,12);assert.equal(new Set(requests).size,12);
+  assert.equal(squad.players[0].club,'現在クラブ');assert.equal(squad.previous.players[0].club,'前回クラブ');
+  const former=squad.previous.players.find(p=>p.id==='former_player');
+  assert.equal(former.profile.birthDate,'2004-04-08');assert.equal(former.profileStatus.ok,true);
+  assert.equal(squad.players.some(p=>p.id==='former_player'),false);
+});
+
+test('a player moving to previous-only retains saved profile on a failed registry request',()=>{
+  const old={id:'former_player',name:'前回 選手',profile:{birthDate:'1990-03-04'},caps:13};
+  const previous={footballSquad:{ok:true,data:{players:[old]}}};
+  const current={footballSquad:{ok:true,data:{players:[],previous:{players:[{id:old.id,name:old.name,club:'前回クラブ',profileStatus:{ok:false}}]}}}};
+  preserveSquadProfiles(previous,current);
+  const player=current.footballSquad.data.previous.players[0];
+  assert.equal(player.profile.birthDate,'1990-03-04');assert.equal(player.profile.stale,true);assert.equal(player.caps,13);assert.equal(player.club,'前回クラブ');
+  assert.deepEqual(current.footballSquad.data.players,[]);
+});

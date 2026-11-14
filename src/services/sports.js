@@ -3639,11 +3639,13 @@ export function mountSports(scope) {
     }
   }
   function showSoccerPlayer(id) {
-    const p = soccerPlayers().find((p) => p.id === id);
+    const roster = data?.footballSquad?.ok ? data.footballSquad.data : null;
+    const current = roster?.players.find((p) => p.id === id);
+    const p = current || roster?.previous?.players.find((p) => p.id === id);
     if (!p) return;
     $("soccer-player-title").textContent = "選手プロフィール";
     const profile = p.profile || {},
-      squad = data.footballSquad.data,
+      squad = current ? roster : roster.previous,
       age = playerAge(profile.birthDate),
       clubName = (p.club || "").split("／")[0],
       country =
@@ -3657,12 +3659,14 @@ export function mountSports(scope) {
           (p.profileStatus?.ok ? "JFA選手名鑑に掲載なし" : "未取得"),
       ],
     ];
-    const previous = squad.previous?.players,
-      selection = previous
-        ? previous.some((v) => v.id === p.id)
-          ? "前回の掲載名簿にも掲載"
-          : "今回の掲載名簿に追加（初招集とは限りません）"
-        : "前回の名簿は未取得";
+    const previous = roster.previous?.players,
+      selection = !current
+        ? "前回のみ掲載（今回の掲載名簿には含まれません）"
+        : previous
+          ? previous.some((v) => v.id === p.id)
+            ? "前回の掲載名簿にも掲載"
+            : "今回の掲載名簿に追加（初招集とは限りません）"
+          : "前回の名簿は未取得";
     const representative = [
       ["代表出場数", p.caps == null ? "未取得" : p.caps + "試合"],
       [
@@ -3723,7 +3727,7 @@ export function mountSports(scope) {
             return `<li><small>${esc(formatDate(g.date))}${g.kickoff ? " · " + esc(new Intl.DateTimeFormat("ja-JP", { timeZone: "Asia/Tokyo", hour: "2-digit", minute: "2-digit" }).format(new Date(g.kickoff))) : ""}（日本時間）</small><strong>${esc(g.home.name)} × ${esc(g.away.name)}</strong><span>${esc(score)}</span>${soccerSourceLink(g.url, "試合情報")}</li>`;
           })
           .join("")}</ul>`
-      : `<p class="note">${!clubData ? "クラブの日程を取得できませんでした。" : !club?.matched ? "このクラブは日程データと照合できていません。" : "取得範囲内に今週の掲載試合はありません（未収録・取得失敗を含みます）。"}</p>`;
+      : `<p class="note">${!current ? "今週のクラブ日程は今回の掲載選手のみ取得しています。" : !clubData ? "クラブの日程を取得できませんでした。" : !club?.matched ? "このクラブは日程データと照合できていません。" : "取得範囲内に今週の掲載試合はありません（未収録・取得失敗を含みます）。"}</p>`;
     const career = Array.isArray(profile.career) ? profile.career : [];
     const statsNote =
       p.statsKind === "directory"
@@ -3747,7 +3751,7 @@ export function mountSports(scope) {
         <figcaption>${photo ? soccerSourceLink(p.url, "写真：JFA公式 ↗") : "JFA選手名鑑"}</figcaption>
       </figure>
       <div class="player-profile-identity">
-        <div class="player-profile-kicker"><span>SAMURAI BLUE</span><span class="player-position">${esc(p.position || "—")}</span></div>
+        <div class="player-profile-kicker"><span>SAMURAI BLUE</span><span class="player-position">${esc(p.position || "—")}</span>${!current ? '<span class="player-position">前回のみ掲載</span>' : ""}</div>
         <h3 id="soccer-player-name">${esc(p.name)}</h3>
         ${profile.englishName ? `<p class="profile-english">${esc(profile.englishName)}</p>` : ""}
         <p class="player-profile-club">${esc(clubName || "所属未取得")}<small>${esc(country)}</small></p>
@@ -3927,7 +3931,7 @@ export function mountSports(scope) {
     }
     const changeList = (players) =>
       players.length
-        ? `<ul>${players.map((p) => `<li><strong>${esc(p.name)}</strong><span>${esc(p.position || "")} · ${esc(p.club || "所属未取得")}</span></li>`).join("")}</ul>`
+        ? `<ul>${players.map((p) => `<li>${soccerPlayerButton(p)}<span>${esc(p.position || "")} · ${esc(p.club || "所属未取得")}</span></li>`).join("")}</ul>`
         : '<p class="note">該当する選手はいません。</p>';
     $("squad-changes").innerHTML =
       `<p class="note">比較対象：${esc(formatDate(prior.date))}の掲載招集メンバー</p><div class="squad-change-grid"><section class="squad-change-card squad-change-added"><h5>新たに掲載<span>${added.length}人</span></h5>${changeList(added)}</section><section class="squad-change-card"><h5>前回のみ掲載<span>${removed.length}人</span></h5>${changeList(removed)}</section></div><p class="note squad-change-note">掲載名簿の差分です。初招集・復帰・離脱理由はこの比較だけでは断定しません。</p>`;

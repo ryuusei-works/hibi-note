@@ -18,7 +18,28 @@ export async function collectClubWeek(getText,league,months,from,to){
 // Fetch only the one or two months touched by this week and filter in JST.
 export async function collectEnhancements(getText,{today,year,footballGames}){
  const rosterSource=`https://www.jfa.jp/samuraiblue_${year}/member/`;
- const [footballSquad,baseballStarters]=await Promise.all([safely(async()=>{const entries=parseSquadDirectory(await getText(rosterSource),today);if(!entries.length)throw Error('No squad');const current=entries[0],players=parseSquad(await getText(current.url));let prior=null;try{if(entries[1])prior={...entries[1],players:parseSquad(await getText(entries[1].url))};}catch{}const finished=footballGames?.ok?footballGames.data.filter(g=>g.status==='finished'&&g.date<=today).sort((a,b)=>b.date.localeCompare(a.date)):[];const latest=finished[0];let program=null;const programSource=latest?`https://op.jfa.jp/samuraiblue${latest.date.replaceAll('-','')}/`:null;try{if(programSource)program=parseProgram(await getText(programSource));}catch{}return {date:current.date,url:current.url,players:await enrichSquadProfiles(players.map(p=>({...p,...(program?.players.find(v=>key(v.name)===key(p.name))||{}),name:p.name,statsSource:programSource})),getText,today),previous:prior,timeline:latest?{date:latest.date,opponent:latest.opponent,events:program?.events||[],source:programSource,ok:!!program?.events.length}:null,statsSource:programSource,statsAsOf:program?.asOf};},rosterSource),safely(async()=>parseStarters(await getText('https://npb.jp/announcement/starter/'),year),'https://npb.jp/announcement/starter/')]);
+ const [footballSquad,baseballStarters]=await Promise.all([
+  safely(async()=>{
+   const entries=parseSquadDirectory(await getText(rosterSource),today);
+   if(!entries.length)throw Error('No squad');
+   const current=entries[0],players=parseSquad(await getText(current.url));
+   let prior=null;
+   try{if(entries[1])prior={...entries[1],players:parseSquad(await getText(entries[1].url))};}catch{}
+   const finished=footballGames?.ok?footballGames.data.filter(g=>g.status==='finished'&&g.date<=today).sort((a,b)=>b.date.localeCompare(a.date)):[];
+   const latest=finished[0];
+   let program=null;
+   const programSource=latest?`https://op.jfa.jp/samuraiblue${latest.date.replaceAll('-','')}/`:null;
+   try{if(programSource)program=parseProgram(await getText(programSource));}catch{}
+   const currentIds=new Set(players.map(p=>p.id));
+   const candidates=[...players,...(prior?.players||[]).filter(p=>!currentIds.has(p.id))];
+   const enriched=await enrichSquadProfiles(candidates.map(p=>({...p,...(program?.players.find(v=>key(v.name)===key(p.name))||{}),name:p.name,statsSource:programSource})),getText,today);
+   const byId=new Map(enriched.map(p=>[p.id,p]));
+   // Keep the club and position from each roster's own announcement.
+   if(prior)prior.players=prior.players.map(p=>({...byId.get(p.id),...p}));
+   return {date:current.date,url:current.url,players:players.map(p=>byId.get(p.id)),previous:prior,timeline:latest?{date:latest.date,opponent:latest.opponent,events:program?.events||[],source:programSource,ok:!!program?.events.length}:null,statsSource:programSource,statsAsOf:program?.asOf};
+  },rosterSource),
+  safely(async()=>parseStarters(await getText('https://npb.jp/announcement/starter/'),year),'https://npb.jp/announcement/starter/')
+ ]);
  const overseas=await safely(async()=>{if(!footballSquad.ok)throw Error('No squad');const start=new Date(today+'T00:00:00Z');start.setUTCDate(start.getUTCDate()-((start.getUTCDay()+6)%7));const from=start.toISOString().slice(0,10);start.setUTCDate(start.getUTCDate()+6);const to=start.toISOString().slice(0,10),months=[...new Set([from.slice(0,7),to.slice(0,7)])].map(month=>month.replace('-',''));const boards=[],leagues=['eng.1','eng.2','ger.1','ger.2','esp.1','fra.1','ita.1','ned.1','bel.1','por.1','sco.1','den.1','jpn.1'];for(let i=0;i<leagues.length;i+=4)boards.push(...await Promise.all(leagues.slice(i,i+4).map(league=>safely(async()=>collectClubWeek(getText,league,months,from,to),'https://www.espn.com/soccer/scoreboard'))));if(boards.every(b=>!b.ok))throw Error('All leagues unavailable');const weekGames=[...new Map(boards.filter(s=>s.ok).flatMap(s=>s.data).map(game=>[game.id,game])).values()];const clubs=footballSquad.data.players.map(p=>{const club=p.club.split('／')[0],alias=Object.entries(clubAliases).find(([name])=>key(name)===key(club))?.[1];return {id:p.id,name:p.name,club:p.club,matched:!!alias,games:alias?weekGames.filter(g=>[g.home.name,g.away.name].some(n=>key(n)===key(alias))):[]};});const players=clubs.filter(p=>p.club.includes('／'));return {from,to,clubs,coverage:'現在の招集選手のうち海外所属者。欧州主要12リーグのリーグ戦掲載分（カップ戦を除く）。出場有無は含みません。',failedLeagues:boards.filter(b=>!b.ok).length,players};},'https://www.espn.com/soccer/scoreboard');
  return {footballSquad,baseballStarters,overseas};
 }

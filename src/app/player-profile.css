@@ -178,6 +178,13 @@
   font-size: 14px;
   font-weight: 500;
 }
+.squad-change-card .player-link {
+  justify-self: start;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 700;
+  min-height: 32px;
+}
 .player-profile-provenance {
   border-top: 1px solid var(--line);
   margin-top: 24px;

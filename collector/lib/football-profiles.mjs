@@ -60,13 +60,15 @@ export async function enrichSquadProfiles(players,getText,today){
 
 export function preserveSquadProfiles(previous,current){
   if(!current.footballSquad?.ok||!previous?.footballSquad?.ok)return;
-  const saved=new Map(previous.footballSquad.data.players.map(p=>[p.id,p]));
-  current.footballSquad.data.players=current.footballSquad.data.players.map(player=>{
+  const saved=new Map([...(previous.footballSquad.data.previous?.players||[]),...previous.footballSquad.data.players].map(p=>[p.id,p]));
+  const preserve=player=>{
     const old=saved.get(player.id);
     if(player.profileStatus?.ok!==false||!old?.profile||nameKey(old.name)!==nameKey(player.name))return player;
     const fields=Object.fromEntries(Object.entries(player.profile||{}).filter(([,value])=>present(value)));
     return {...player,profile:{...old.profile,...fields,stale:true},
       ...(player.caps==null&&old.caps!=null?{caps:old.caps,goals:old.goals,conceded:old.conceded,asOf:old.asOf,statsSource:old.statsSource||previous.footballSquad.data.statsSource,statsKind:old.statsKind}:{}),
     };
-  });
+  };
+  current.footballSquad.data.players=current.footballSquad.data.players.map(preserve);
+  if(current.footballSquad.data.previous)current.footballSquad.data.previous.players=current.footballSquad.data.previous.players.map(preserve);
 }

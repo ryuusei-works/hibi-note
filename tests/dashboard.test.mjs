@@ -103,6 +103,25 @@ test("hydrates with Strict Mode, retains prior data, and supports settings, link
     (player) => player.id !== autoPlayer.id,
   );
   noPhotoPlayer.profile = { ...noPhotoPlayer.profile, photoUrl: null };
+  const priorOnlyPlayer =
+    sportsPayload.footballSquad.data.previous.players.find(
+      (player) =>
+        !sportsPayload.footballSquad.data.players.some(
+          (current) => current.id === player.id,
+        ),
+    );
+  Object.assign(priorOnlyPlayer, {
+    club: "前回掲載クラブ",
+    profile: {
+      birthDate: "1990-03-04",
+      heightCm: 189,
+      weightKg: 80,
+      career: ["前回の経歴"],
+    },
+    profileStatus: { ok: true },
+    caps: 13,
+    statsKind: "directory",
+  });
   const liveDaily = structuredClone(snapshot.daily);
   liveDaily.nationalNews.fetchedAt = "2026-11-13T08:40:00.000Z";
   liveDaily.nationalNews.data[0].title = "RSS latest headline";
@@ -313,6 +332,35 @@ test("hydrates with Strict Mode, retains prior data, and supports settings, link
       $("squad-changes").querySelectorAll(".squad-change-card").length,
       2,
     );
+    const addedProfileButton = $("squad-changes").querySelector(
+      ".squad-change-added [data-soccer-player]",
+    );
+    assert.ok(addedProfileButton);
+    addedProfileButton.click();
+    assert.equal(
+      $("soccer-player-name").textContent,
+      addedProfileButton.textContent,
+    );
+    $("soccer-player-close").click();
+    const previousProfileButton = $("squad-changes").querySelector(
+      `[data-soccer-player="${priorOnlyPlayer.id}"]`,
+    );
+    assert.ok(previousProfileButton);
+    previousProfileButton.click();
+    assert.equal($("soccer-player-name").textContent, priorOnlyPlayer.name);
+    assert.ok($("soccer-player-body").textContent.includes("1990-03-04"));
+    assert.ok($("soccer-player-body").textContent.includes("前回掲載クラブ"));
+    assert.ok(
+      $("soccer-player-body").textContent.includes(
+        "前回のみ掲載（今回の掲載名簿には含まれません）",
+      ),
+    );
+    assert.ok($("soccer-player-body").textContent.includes("13試合"));
+    assert.equal(
+      $("lineup-pitch").querySelector(`option[value="${priorOnlyPlayer.id}"]`),
+      null,
+    );
+    $("soccer-player-close").click();
 
     assert.equal(w.document.querySelectorAll("[data-theme-choice]").length, 12);
     assert.equal(
